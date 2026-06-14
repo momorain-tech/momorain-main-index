@@ -3,8 +3,6 @@ import Link from "next/link"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
-import { MainNav } from "@/components/main-nav"
-import { SiteFooter } from "@/components/site-footer"
 import {
   RECOMMENDED_PROJECTS,
   TRENDING_PROJECTS,
@@ -15,15 +13,7 @@ import {
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* 顶部导航 */}
-      <header className="container z-40 bg-background">
-        <div className="flex h-20 items-center justify-between py-6">
-          <MainNav />
-        </div>
-      </header>
-
-      <main className="flex-1">
+    <>
         {/* Hero 区块：主标语 */}
         <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
           <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
@@ -106,10 +96,7 @@ export default function HomePage() {
             />
           </div>
         </section>
-      </main>
-
-      <SiteFooter />
-    </div>
+    </>
   )
 }
 

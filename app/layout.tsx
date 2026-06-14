@@ -5,6 +5,8 @@ import "@/app/globals.css"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider"
+import { MainNav } from "@/components/main-nav"
+import { SiteFooter } from "@/components/site-footer"
 
 // next/font/google 会在构建时下载字体，不走第三方CDN，速度更快且隐私更好
 const fontSans = FontSans({
@@ -37,7 +39,18 @@ export default function RootLayout({
       >
         {/* ThemeProvider 用 Context 把主题状态传给整个应用树 */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          {/* 站点外壳：所有页面共享同一套 header/footer，页面只需渲染 <main> 内容 */}
+          <div className="flex min-h-screen flex-col">
+            <header className="container z-40 bg-background">
+              <div className="flex h-20 items-center justify-between py-6">
+                <MainNav />
+              </div>
+            </header>
+
+            <main className="flex-1">{children}</main>
+
+            <SiteFooter />
+          </div>
         </ThemeProvider>
       </body>
     </html>

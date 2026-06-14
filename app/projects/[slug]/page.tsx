@@ -5,8 +5,6 @@ import type { Metadata } from "next"
 import { getProjectBySlug, ALL_PROJECTS } from "@/lib/projects"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { MainNav } from "@/components/main-nav"
-import { SiteFooter } from "@/components/site-footer"
 import { DemoToggle } from "@/components/demo-toggle"
 
 // ─── 类型定义 ─────────────────────────────────────────────────────
@@ -52,14 +50,6 @@ export default async function ProjectPage({ params }: Props) {
   if (!project) notFound()
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="container z-40 bg-background">
-        <div className="flex h-20 items-center justify-between py-6">
-          <MainNav />
-        </div>
-      </header>
-
-      <main className="flex-1">
         <div className="container py-10 md:py-16">
           {/* 返回按钮 */}
           <Link
@@ -115,9 +105,5 @@ export default async function ProjectPage({ params }: Props) {
             </div>
           )}
         </div>
-      </main>
-
-      <SiteFooter />
-    </div>
   )
 }

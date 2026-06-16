@@ -44,7 +44,7 @@ export function MainNav({ user }: { user: SessionUser | null }) {
           // form POST 不需要 JS，Server Component 里也能用
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium">{user.nickname}</span>
-            <form method="POST" action="/api/auth/logout">
+            <form method="POST" action="/auth/logout">
               <button
                 type="submit"
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}

@@ -56,7 +56,7 @@ export function MainNav({ user }: { user: SessionUser | null }) {
         ) : (
           // 未登录：登录按钮（用 <a> 而非 Link，确保触发完整页面跳转）
           <a
-            href="/api/auth/login"
+            href="/api/auth/mock/login?redirect=true"
             className={cn(buttonVariants({ size: "sm" }))}
           >
             登录

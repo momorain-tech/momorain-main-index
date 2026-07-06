@@ -3,15 +3,16 @@ import Link from "next/link"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
-import {
-  RECOMMENDED_PROJECTS,
-  TRENDING_PROJECTS,
-  STARRED_PROJECTS,
-  type Project,
-} from "@/lib/projects"
+import { getHomeProjects, type Project } from "@/lib/projects"
 
+// ISR：构建时预渲染成静态页，之后最多每 5 分钟在后台用 DB 最新数据重新生成
+// 页面对访客始终是静态响应，DB 挂掉也只影响刷新、不影响线上页面
+export const revalidate = 300
 
-export default function HomePage() {
+// async：让 Next.js Server Component 可以直接 await 数据库查询
+export default async function HomePage() {
+  const { recommended, trending, starred } = await getHomeProjects()
+
   return (
     <>
         {/* Hero 区块：主标语 */}
@@ -48,17 +49,17 @@ export default function HomePage() {
             <ProjectPanel
               title="猜你喜欢"
               icon={<SparklesIcon />}
-              items={RECOMMENDED_PROJECTS}
+              items={recommended}
             />
             <ProjectPanel
               title="当前最热"
               icon={<FireIcon />}
-              items={TRENDING_PROJECTS}
+              items={trending}
             />
             <ProjectPanel
               title="用户收藏"
               icon={<StarIcon />}
-              items={STARRED_PROJECTS}
+              items={starred}
             />
           </div>
         </section>

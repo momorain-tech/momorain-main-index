@@ -1,14 +1,13 @@
 import Link from "next/link"
 
-import { type SessionUser } from "@/lib/auth"
 import { siteConfig } from "@/config/site"
 import { Icons } from "@/components/icons"
 import { ModeToggle } from "@/components/mode-toggle"
-import { buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { UserNav } from "@/components/user-nav"
 
-// user 由 layout.tsx 服务端读取后传入，这里只负责展示
-export function MainNav({ user }: { user: SessionUser | null }) {
+// 导航本体是纯展示的 Server Component
+// 登录态由 UserNav（Client Component）自行请求 /api/me，不经过 layout
+export function MainNav() {
   return (
     <div className="flex w-full items-center justify-between gap-6">
       {/* 左侧：Logo + 站点名 */}
@@ -38,30 +37,7 @@ export function MainNav({ user }: { user: SessionUser | null }) {
       {/* 右侧：主题切换 + 用户区域 */}
       <div className="flex items-center gap-3">
         <ModeToggle />
-
-        {user ? (
-          // 已登录：显示昵称 + 退出按钮
-          // form POST 不需要 JS，Server Component 里也能用
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">{user.nickname}</span>
-            <form method="POST" action="/auth/logout">
-              <button
-                type="submit"
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              >
-                退出
-              </button>
-            </form>
-          </div>
-        ) : (
-          // 未登录：登录按钮（用 <a> 而非 Link，确保触发完整页面跳转）
-          <a
-            href="/api/auth/mock/login?redirect=true"
-            className={cn(buttonVariants({ size: "sm" }))}
-          >
-            登录
-          </a>
-        )}
+        <UserNav />
       </div>
     </div>
   )

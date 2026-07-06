@@ -4,7 +4,6 @@ import { Inter as FontSans } from "next/font/google"
 import "@/app/globals.css"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
-import { getCurrentUser } from "@/lib/auth"
 import { ThemeProvider } from "@/components/theme-provider"
 import { MainNav } from "@/components/main-nav"
 import { SiteFooter } from "@/components/site-footer"
@@ -22,16 +21,13 @@ export const metadata: Metadata = {
   description: siteConfig.description,
 }
 
-// layout 是 Server Component，可以直接 await 异步函数
-export default async function RootLayout({
+// 注意：layout 里不要调用 cookies()/headers() 等动态 API，
+// 否则全站所有路由都会退出静态渲染。登录态由 UserNav 走 /api/me 获取。
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // 每次请求服务端读取 Cookie 并验证 JWT，将用户信息向下传递
-  // 如果未登录或 token 无效，user 为 null
-  const user = await getCurrentUser()
-
   return (
     <html lang="zh" suppressHydrationWarning>
       <head />
@@ -45,7 +41,7 @@ export default async function RootLayout({
           <div className="flex min-h-screen flex-col">
             <header className="container z-40 bg-background">
               <div className="flex h-20 items-center justify-between py-6">
-                <MainNav user={user} />
+                <MainNav />
               </div>
             </header>
 

@@ -12,7 +12,8 @@ next-env.d.ts
 # typescript
 tsconfig.tsbuildinfo
 
-# env
+# env（含 plain .env，DB 凭据绝不入库）
+.env
 .env*.local
 
 # misc

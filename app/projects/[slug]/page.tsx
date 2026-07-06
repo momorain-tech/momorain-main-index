@@ -2,37 +2,34 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import type { Metadata } from "next"
 
-import { getProjectBySlug, ALL_PROJECTS } from "@/lib/projects"
+import { getProjectBySlug, getAllSlugs } from "@/lib/projects"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { DemoToggle } from "@/components/demo-toggle"
 
 // ─── 类型定义 ─────────────────────────────────────────────────────
-// Next.js 把动态路由参数通过 params 传进来
-// [slug] 文件夹名 → params.slug 字段名，两者一一对应
 
 type Props = {
   params: Promise<{ slug: string }>
 }
 
-// ─── 静态生成（可选但推荐）────────────────────────────────────────
-// generateStaticParams 告诉 Next.js：构建时把这些路径全部预渲染成静态 HTML
-// 好处：访问速度极快，不需要服务器实时计算
-// 如果不写这个函数，页面也能工作，只是改为"按需渲染"
+// ─── 静态生成 + ISR ───────────────────────────────────────────────
+// 构建时查询数据库，把所有存在的 slug 预渲染成静态 HTML；
+// 之后最多每 5 分钟在后台按 DB 最新数据重新生成。
+// 构建后新增的 slug 首次访问时按需渲染（dynamicParams 默认开启）
+
+export const revalidate = 300
 
 export async function generateStaticParams() {
-  return ALL_PROJECTS.map((project) => ({
-    slug: project.slug,
-  }))
+  const slugs = await getAllSlugs()
+  return slugs.map((slug) => ({ slug }))
 }
 
 // ─── 动态 SEO 元数据 ──────────────────────────────────────────────
-// generateMetadata 根据当前页面的 slug 生成对应的 <title> 和 <meta>
-// 这样每个项目页都有独立的 SEO 信息，对搜索引擎友好
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const project = getProjectBySlug(slug)
+  const project = await getProjectBySlug(slug)
   if (!project) return {}
   return {
     title: project.name,
@@ -44,9 +41,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProjectPage({ params }: Props) {
   const { slug } = await params
-  const project = getProjectBySlug(slug)
+  const project = await getProjectBySlug(slug)
 
-  // notFound() 是 Next.js 内置函数，访问不存在的 slug 时自动返回 404 页面
   if (!project) notFound()
 
   return (

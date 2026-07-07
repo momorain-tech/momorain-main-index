@@ -28,6 +28,16 @@ export function getPool(): mysql.Pool {
   return (global._mysqlPool ??= createPool())
 }
 
+// 判断 DB 环境变量是否配置齐全（未配置时读取方走静态 fallback，写入方直接报错）
+export function isDbConfigured(): boolean {
+  return !!(
+    process.env.DB_HOST &&
+    process.env.DB_USER &&
+    process.env.DB_PASSWORD &&
+    process.env.DB_NAME
+  )
+}
+
 // 便捷查询函数，调用方不用手动处理 pool.execute 的返回值结构
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function query<T>(sql: string, values?: any[]): Promise<T[]> {

@@ -19,3 +19,5 @@ tsconfig.tsbuildinfo
 # misc
 .DS_Store
 *.pem
+
+CLAUDE.md

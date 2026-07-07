@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 
 import type { SessionUser } from "@/lib/auth"
@@ -11,13 +12,17 @@ import { buttonVariants } from "@/components/ui/button"
 export function UserNav() {
   // undefined = 加载中，null = 未登录
   const [user, setUser] = useState<SessionUser | null | undefined>(undefined)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     fetch("/api/me")
       .then((res) => (res.ok ? res.json() : { user: null }))
       .then((data) => {
-        if (!cancelled) setUser(data.user ?? null)
+        if (!cancelled) {
+          setUser(data.user ?? null)
+          setIsAdmin(data.isAdmin ?? false)
+        }
       })
       .catch(() => {
         if (!cancelled) setUser(null)
@@ -33,6 +38,15 @@ export function UserNav() {
   if (user) {
     return (
       <div className="flex items-center gap-3">
+        {/* 只对超级用户显示入口；藏按钮只是体验，/admin 在服务端还有守卫 */}
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            管理
+          </Link>
+        )}
         <span className="text-sm font-medium">{user.nickname}</span>
         {/* form POST 不需要 JS 状态，浏览器原生提交即可 */}
         <form method="POST" action="/auth/logout">

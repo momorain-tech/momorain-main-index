@@ -1,4 +1,4 @@
-import { query } from "@/lib/db"
+import { query, isDbConfigured } from "@/lib/db"
 import {
   STATIC_RECOMMENDED,
   STATIC_TRENDING,
@@ -50,8 +50,8 @@ function rowToProject(row: ProjectRow): Project {
 // 注意：fallback 只处理"未配置"，不处理"配置了但连不上"——
 // 后者应该让错误抛出来（fail fast），而不是静默退回陈旧数据
 let warnedFallback = false
-function isDbConfigured(): boolean {
-  const configured = !!(process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_NAME)
+function useDb(): boolean {
+  const configured = isDbConfigured()
   if (!configured && !warnedFallback) {
     warnedFallback = true
     console.warn(
@@ -70,7 +70,7 @@ export async function getHomeProjects(): Promise<{
   trending: Project[]
   starred: Project[]
 }> {
-  if (!isDbConfigured()) {
+  if (!useDb()) {
     return {
       recommended: STATIC_RECOMMENDED,
       trending: STATIC_TRENDING,
@@ -90,7 +90,7 @@ export async function getHomeProjects(): Promise<{
 
 // 所有 slug，用于 generateStaticParams 预渲染
 export async function getAllSlugs(): Promise<string[]> {
-  if (!isDbConfigured()) {
+  if (!useDb()) {
     return [
       ...STATIC_RECOMMENDED,
       ...STATIC_TRENDING,
@@ -104,7 +104,7 @@ export async function getAllSlugs(): Promise<string[]> {
 
 // 单个项目详情，用于详情页
 export async function getProjectBySlug(slug: string): Promise<Project | undefined> {
-  if (!isDbConfigured()) {
+  if (!useDb()) {
     return [...STATIC_RECOMMENDED, ...STATIC_TRENDING, ...STATIC_STARRED].find(
       (p) => p.slug === slug
     )

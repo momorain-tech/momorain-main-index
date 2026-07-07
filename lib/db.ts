@@ -16,6 +16,9 @@ function createPool(): mysql.Pool {
     password: process.env.DB_PASSWORD,
     waitForConnections: true,
     connectionLimit: 10,
+    // 显式指定连接字符集，不依赖驱动默认值——
+    // 少了 mb4 的话 emoji（4 字节字符）会写坏，中文乱码事故也多源于隐式字符集
+    charset: "utf8mb4",
     // mysql2 默认把 JSON 列当字符串返回，这里让它自动 parse 成对象
     typeCast(field, next) {
       if (field.type === "JSON") return JSON.parse(field.string("utf8") as string)

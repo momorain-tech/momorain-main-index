@@ -92,11 +92,11 @@ export function validateProjectInput(data: unknown): ValidationResult {
   const d = data as Record<string, unknown>
 
   // 必填字符串字段：字段名 → [中文名, 最大长度]
+  // 注意单位：VARCHAR(n) 的 n 是"字符"数，直接比 .length 即可
   const required: [keyof ProjectInput & string, string, number][] = [
     ["icon", "图标", 20],
     ["name", "名称", 100],
     ["desc", "简介", 500],
-    ["longDesc", "详细介绍", 60000],
   ]
   for (const [field, label, maxLen] of required) {
     const v = d[field]
@@ -106,6 +106,16 @@ export function validateProjectInput(data: unknown): ValidationResult {
     if (v.length > maxLen) {
       return { ok: false, error: `${label}（${field}）超过 ${maxLen} 字符上限` }
     }
+  }
+
+  // longDesc 对应的 TEXT 列上限是 65535 **字节**（不是字符）——
+  // 中文每字占 3 字节，按字符数校验会放过超长文本、让 MySQL 报错变成 500
+  const longDesc = d.longDesc
+  if (typeof longDesc !== "string" || longDesc.trim() === "") {
+    return { ok: false, error: "详细介绍（longDesc）不能为空" }
+  }
+  if (Buffer.byteLength(longDesc, "utf8") > 65535) {
+    return { ok: false, error: "详细介绍（longDesc）超过 65535 字节上限（约 2 万汉字）" }
   }
 
   if (

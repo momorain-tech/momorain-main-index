@@ -18,7 +18,7 @@ function createPool(): mysql.Pool {
     connectionLimit: 10,
     // mysql2 默认把 JSON 列当字符串返回，这里让它自动 parse 成对象
     typeCast(field, next) {
-      if (field.type === "JSON") return JSON.parse(field.string() as string)
+      if (field.type === "JSON") return JSON.parse(field.string("utf8") as string)
       return next()
     },
   })

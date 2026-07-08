@@ -239,3 +239,47 @@ export async function deleteProject(slug: string): Promise<boolean> {
   const result = await query<never>("DELETE FROM projects WHERE slug = ?", [slug])
   return (result as unknown as { affectedRows: number }).affectedRows > 0
 }
+
+// ─── Wiki ─────────────────────────────────────────────────────────
+// wiki 是管理员的内部记录（部署方法、注意事项等），只在 /admin 可见：
+// - 不放进 AdminProject——列表页不需要拖着一大段文本一起查
+// - 永远不进访客端 lib/projects.ts——内部信息不该出现在公开页面
+// 所以它有自己独立的读写函数和校验，而不是挤进 ProjectInput
+
+export type WikiValidationResult =
+  | { ok: true; value: string }
+  | { ok: false; error: string }
+
+export function validateWiki(value: unknown): WikiValidationResult {
+  if (typeof value !== "string") {
+    return { ok: false, error: "wiki 内容必须是字符串" }
+  }
+  // 与 longDesc 同理：TEXT 列上限是 65535 字节（不是字符）
+  if (Buffer.byteLength(value, "utf8") > 65535) {
+    return { ok: false, error: "wiki 超过 65535 字节上限（约 2 万汉字），考虑精简或拆分" }
+  }
+  return { ok: true, value }
+}
+
+// 返回 null 表示项目不存在（或 DB 未配置）；
+// 项目存在但从未写过 wiki（列为 NULL）时返回 ""，调用方不用再分辨两种"没有"
+export async function getProjectWiki(slug: string): Promise<string | null> {
+  if (!isDbConfigured()) return null
+  const rows = await query<{ wiki: string | null }>(
+    "SELECT wiki FROM projects WHERE slug = ? LIMIT 1",
+    [slug]
+  )
+  if (!rows[0]) return null
+  return rows[0].wiki ?? ""
+}
+
+// 返回是否真的更新到了记录（slug 不存在时为 false）
+export async function updateProjectWiki(slug: string, wiki: string): Promise<boolean> {
+  assertDb()
+  // 清空时存回 NULL 而不是空字符串，和"从未写过"保持同一种表示
+  const result = await query<never>("UPDATE projects SET wiki = ? WHERE slug = ?", [
+    wiki.trim() === "" ? null : wiki,
+    slug,
+  ])
+  return (result as unknown as { affectedRows: number }).affectedRows > 0
+}

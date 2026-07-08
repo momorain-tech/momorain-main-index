@@ -74,6 +74,12 @@ export default async function AdminProjectsPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-2">
                     <Link
+                      href={`/admin/projects/${project.slug}/wiki`}
+                      className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                    >
+                      Wiki
+                    </Link>
+                    <Link
                       href={`/admin/projects/${project.slug}`}
                       className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                     >

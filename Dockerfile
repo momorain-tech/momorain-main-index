@@ -37,16 +37,20 @@ COPY . .
 # 这些值由 Dokploy 以 --build-arg 传入。
 # 关键：它们只存在于这个 builder 阶段，最终镜像里不会有——
 # 这正是多阶段构建相比 nixpacks 的安全优势。
+# 只声明构建期真正需要的变量。
+#
+# JWT_SECRET 和 ADMIN_USER_IDS 曾经也列在这里，但它们只被 lib/auth.ts 用到，
+# 而 lib/auth.ts 的调用方全是动态路由（/admin/* 读 cookies、
+# /api/me 与 /api/admin/* 是 Route Handler），构建期根本不执行。
+# 多传一个密钥进构建参数就多一处泄露面（Docker 会为此报
+# SecretsUsedInArgOrEnv 警告），所以去掉了——它们在 Environment 里有就够。
 ARG DB_HOST
 ARG DB_PORT
 ARG DB_NAME
 ARG DB_USER
 ARG DB_PASSWORD
-ARG JWT_SECRET
-ARG ADMIN_USER_IDS
 ENV DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME \
-    DB_USER=$DB_USER DB_PASSWORD=$DB_PASSWORD \
-    JWT_SECRET=$JWT_SECRET ADMIN_USER_IDS=$ADMIN_USER_IDS
+    DB_USER=$DB_USER DB_PASSWORD=$DB_PASSWORD
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com

@@ -25,18 +25,44 @@ type ApiResponse<T = unknown> = {
 }
 
 /**
+ * 允许回跳的 host 白名单。
+ *
+ * 本站是全 workspace 的中央登录页，其他站点（clip-sketch、cv-workshop、
+ * OpenMontage…）登录后要跳回自己那边，所以必须支持跨 host 回跳。
+ * 新站点部署在新 host 上时，要在这里加一行。
+ * 同 host 下的子路径应用不需要改这里。
+ */
+const ALLOWED_NEXT_HOSTS = new Set(["momorain.com", "www.momorain.com"])
+
+/**
  * 校验登录后要跳转的地址，防「开放重定向」漏洞。
  *
  * 如果直接用 ?next= 的值跳转，攻击者可以构造
  *   https://momorain.com/login?next=https://钓鱼站.com
  * 用户看到的是可信域名，登录完却被送到钓鱼站。
- * 所以只接受站内的相对路径，并且排除 //evil.com 这种"协议相对 URL"。
+ *
+ * 只接受两种形式：站内相对路径，或白名单 host 的 https 绝对地址。
  */
 function safeNextPath(raw: string | null): string {
   if (!raw) return "/"
-  if (!raw.startsWith("/")) return "/"
-  if (raw.startsWith("//")) return "/"
-  return raw
+
+  if (raw.startsWith("/")) {
+    // "//evil.com" 是「协议相对 URL」，浏览器当成 https://evil.com 处理。
+    // 它以 "/" 开头，最容易被误判成站内路径——这是个经典疏漏。
+    if (raw.startsWith("//")) return "/"
+    // "/\evil.com" 在部分浏览器里同样会被当成协议相对 URL
+    if (raw.startsWith("/\\")) return "/"
+    return raw
+  }
+
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== "https:") return "/"
+    if (!ALLOWED_NEXT_HOSTS.has(url.hostname)) return "/"
+    return url.toString()
+  } catch {
+    return "/"
+  }
 }
 
 export default function LoginPage() {

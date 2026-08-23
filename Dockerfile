@@ -16,8 +16,13 @@ WORKDIR /app
 
 # 只复制依赖清单，这一层能被 Docker 缓存：
 # 改业务代码时不会重新装依赖
+# corepack 会读 package.json 的 packageManager 字段自动装对应版本的 pnpm。
+# 不要写 pnpm@latest——那会让构建结果随时间漂移，今天能过明天可能就挂了。
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
+
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
+RUN corepack enable && \
     pnpm config set registry https://registry.npmmirror.com && \
     pnpm install --frozen-lockfile
 
@@ -45,18 +50,18 @@ ENV DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME \
     JWT_SECRET=$JWT_SECRET ADMIN_USER_IDS=$ADMIN_USER_IDS \
     BACKEND_URL=$BACKEND_URL
 
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
 RUN corepack enable && pnpm build
 
 # 构建后自检：如果构建期没连上数据库，Next.js 会静默烘焙
 # lib/projects-data.ts 里的 fallback 假数据，页面看起来正常但内容是错的。
 # 这里用静态路由数量兜底校验：正常应有 18 条（首页 + /login + /dashboard + 15 个项目页）。
 # 数量对不上就让构建失败，而不是把假数据发到线上。
-RUN node -e "
-const m = require('./.next/prerender-manifest.json');
-const n = Object.keys(m.routes).length;
-console.log('静态预渲染路由数: ' + n);
-if (n < 10) { console.error('❌ 静态路由过少，构建期很可能没连上数据库'); process.exit(1); }
-"
+# 注意写成一行：Dockerfile 的 RUN 不支持跨行字符串，
+# 换行必须用反斜杠续行，否则解析器会把第二行当成新指令报
+# "unknown instruction: const"。
+RUN node -e "const m=require('./.next/prerender-manifest.json');const n=Object.keys(m.routes).length;console.log('静态预渲染路由数: '+n);if(n<10){console.error('静态路由过少，构建期很可能没连上数据库');process.exit(1)}"
 
 # ── 运行阶段 ────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner

@@ -52,16 +52,36 @@ ENV DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME \
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
-RUN corepack enable && pnpm build
+# 构建前置检查：DB_HOST 必须非空。
+#
+# 血泪教训（2026-08-23）：Dokploy 对 **nixpacks** 构建会自动把应用的环境变量
+# 传成 --build-arg，但对 **Dockerfile** 构建不会——必须在 Dokploy 的
+# Build Args 字段里显式再填一遍。漏填的后果不是构建失败，而是
+# lib/projects.ts 静默走 fallback，把 lib/projects-data.ts 里的样例数据
+# 烘焙进产物：页面正常打开、内容却是错的，极难发现。
+#
+# 所以这里做确定性检查，而不是靠"数一数路由够不够多"这种启发式——
+# 那个阈值我第一版设成 10，而 fallback 恰好产出 18 条，直接被绕过去了。
+RUN test -n "$DB_HOST" || ( \
+      echo "构建失败：DB_HOST 为空。" && \
+      echo "Dockerfile 构建拿不到应用的运行时环境变量，" && \
+      echo "需要在 Dokploy 的 Build Args 里显式填入 DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD。" && \
+      exit 1 )
 
-# 构建后自检：如果构建期没连上数据库，Next.js 会静默烘焙
-# lib/projects-data.ts 里的 fallback 假数据，页面看起来正常但内容是错的。
-# 这里用静态路由数量兜底校验：正常应有 18 条（首页 + /login + /dashboard + 15 个项目页）。
-# 数量对不上就让构建失败，而不是把假数据发到线上。
-# 注意写成一行：Dockerfile 的 RUN 不支持跨行字符串，
-# 换行必须用反斜杠续行，否则解析器会把第二行当成新指令报
-# "unknown instruction: const"。
-RUN node -e "const m=require('./.next/prerender-manifest.json');const n=Object.keys(m.routes).length;console.log('静态预渲染路由数: '+n);if(n<10){console.error('静态路由过少，构建期很可能没连上数据库');process.exit(1)}"
+# 把构建输出留档，构建后检查有没有 fallback 告警。
+# 这是最直接的信号——lib/projects.ts 走 fallback 时会打印 [projects] 开头的警告。
+RUN corepack enable && \
+    { pnpm build > /tmp/build.log 2>&1 || { cat /tmp/build.log; exit 1; }; } && \
+    cat /tmp/build.log && \
+    if grep -q "\[projects\]" /tmp/build.log; then \
+      echo "构建失败：构建期未能连上数据库，产物里烘焙的是 fallback 样例数据。" && \
+      echo "检查 Dokploy Build Args 里的 DB_* 是否填对、以及数据库是否可达。" && \
+      exit 1; \
+    fi
+
+# 附加信息：打印预渲染路由数，方便对照排查
+# （不作为判定依据——fallback 也能产出接近的数量，见上面的注释）
+RUN node -e "const m=require('./.next/prerender-manifest.json');console.log('静态预渲染路由数: '+Object.keys(m.routes).length)"
 
 # ── 运行阶段 ────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner

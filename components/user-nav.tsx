@@ -62,12 +62,10 @@ export function UserNav() {
   }
 
   return (
-    // 用 <a> 而非 Link，确保触发完整页面跳转走后端登录流程
-    <a
-      href="/api/auth/mock/login?redirect=true"
-      className={cn(buttonVariants({ size: "sm" }))}
-    >
+    // 用 Link 做客户端跳转即可——/login 是纯前端页面，
+    // 真正种 Cookie 的是页面里对后端接口的 fetch
+    <Link href="/login" className={cn(buttonVariants({ size: "sm" }))}>
       登录
-    </a>
+    </Link>
   )
 }

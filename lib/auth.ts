@@ -5,6 +5,10 @@ import { NextResponse } from "next/server"
 export type SessionUser = {
   userId: string
   openid: string
+  // 后端签发 JWT 时已经把手机号脱敏成 138****1234 才写进 token。
+  // 原因：JWT 只是 base64 编码不是加密，任何拿到它的人都能解出内容，
+  // 完整手机号不该出现在这里。需要完整号码的场景由后端按 userId 查库。
+  phone: string
   nickname: string
   avatarUrl: string
 }
@@ -35,6 +39,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     return {
       userId: payload.userId as string,
       openid: payload.openid as string,
+      phone: (payload.phone as string) ?? "",
       nickname: payload.nickname as string,
       avatarUrl: (payload.avatarUrl as string) ?? "",
     }

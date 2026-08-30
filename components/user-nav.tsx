@@ -47,6 +47,19 @@ export function UserNav() {
             管理
           </Link>
         )}
+        {/* 模型额度入口：登录后才显示。
+            放这里而不是主导航，是因为它属于「我的账号」范畴——
+            没登录的访客点进去只会看到一个要求登录的页面。 */}
+        {/* 必须用 <a> 而不是 <Link>：/one-api 由 Traefik 路由到另一个独立应用，
+            不是本站的 Next 路由。<Link> 会做客户端导航，Next 在自己的路由表里
+            找不到它 → 404。这类跨应用链接一律用原生 <a> 触发整页跳转。 */}
+        <a
+          href="/one-api"
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+          title="管理模型 API Key 与额度"
+        >
+          模型额度
+        </a>
         <span className="text-sm font-medium">{user.nickname}</span>
         {/* form POST 不需要 JS 状态，浏览器原生提交即可 */}
         <form method="POST" action="/auth/logout">

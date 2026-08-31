@@ -34,6 +34,21 @@ export default async function AdminLayout({
           ← 返回首页
         </Link>
       </div>
+
+      {/* 模块导航。不做「高亮当前项」——那需要 usePathname，
+          会把这个 layout 变成客户端组件，为一点视觉反馈不值得 */}
+      <nav className="mb-6 flex gap-4 text-sm">
+        <Link href="/admin" className="text-muted-foreground hover:text-foreground">
+          总览
+        </Link>
+        <Link href="/admin/analytics" className="text-muted-foreground hover:text-foreground">
+          数据看板
+        </Link>
+        <Link href="/admin/projects" className="text-muted-foreground hover:text-foreground">
+          项目管理
+        </Link>
+      </nav>
+
       {children}
     </div>
   )

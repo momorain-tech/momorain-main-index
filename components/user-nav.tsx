@@ -51,12 +51,14 @@ export function UserNav() {
 
   if (user) {
     return (
-      <div className="flex items-center gap-3">
+      // min-w-0：flex 子元素默认"至少和内容一样宽"，不加的话里面的昵称
+      // 永远不会收缩，截断也就不会生效（这是 flex + truncate 最常见的坑）
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {/* 只对超级用户显示入口；藏按钮只是体验，/admin 在服务端还有守卫 */}
         {isAdmin && (
           <Link
             href="/admin"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
           >
             管理
           </Link>
@@ -66,18 +68,25 @@ export function UserNav() {
             裸链到 /one-api 时，用户看到的是 one-api 自己的会话——可能是登录页，
             也可能是之前用 root 登录留下的别人的账号。账号页里的链接用的是
             provision 返回的 consoleUrl，会先按当前身份换好会话再跳。 */}
+        {/* 昵称最长 20 个字，导航栏放不下，所以限宽 + 省略号：
+            手机上最多约 5 个汉字宽，桌面约 10 个；空间不够时继续收缩，但不小于 3rem
+            （至少露出一两个字 + 省略号——收缩到 0 就等于入口消失了）。
+            完整昵称放在 title 里，悬停可见 */}
         <Link
           href="/account"
-          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-sm")}
-          title="账号设置 · 模型额度"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "min-w-[3rem] max-w-[6rem] text-sm sm:max-w-[11rem]"
+          )}
+          title={`${user.nickname} · 账号设置`}
         >
-          {user.nickname}
+          <span className="truncate">{user.nickname}</span>
         </Link>
         {/* form POST 不需要 JS 状态，浏览器原生提交即可 */}
         <form method="POST" action="/auth/logout">
           <button
             type="submit"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
           >
             退出
           </button>

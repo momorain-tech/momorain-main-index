@@ -30,6 +30,11 @@ const REASON_TEXT: Record<string, string> = {
 export function ModelAccessSection({ onNeedLogin }: { onNeedLogin: () => void }) {
   const [result, setResult] = useState<ModelAccessResult | null>(null)
   const [loading, setLoading] = useState(true)
+  // 两个状态刻意分开：
+  //   revealed    Key 是否显示明文——**只由它决定**，眼睛按钮切的就是它
+  //   copyFailed  是否显示"请手动复制"的提示
+  // 以前是 `revealed || copyFailed` 决定显示，结果复制"接口地址"失败也会把 Key
+  // 露出来，而且之后点"隐藏"遮不回去（按钮图标变了，Key 却还是明文）。
   const [revealed, setRevealed] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
 
@@ -102,8 +107,7 @@ export function ModelAccessSection({ onNeedLogin }: { onNeedLogin: () => void })
                   className="flex h-8 min-w-0 flex-1 items-center overflow-x-auto whitespace-nowrap rounded-md border bg-muted px-3 font-mono text-xs"
                   aria-label="API Key"
                 >
-                  {/* 复制失败时自动展开明文，让用户能手动选中复制 */}
-                  {revealed || copyFailed ? result.data.key : maskKey(result.data.key)}
+                  {revealed ? result.data.key : maskKey(result.data.key)}
                 </code>
                 <Button
                   type="button"
@@ -116,7 +120,15 @@ export function ModelAccessSection({ onNeedLogin }: { onNeedLogin: () => void })
                 >
                   {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
-                <CopyButton text={result.data.key} onError={() => setCopyFailed(true)} />
+                {/* Key 复制失败时展开明文，让用户能手动选中复制。
+                    展开的是 revealed 本身，所以之后照样可以点眼睛遮回去 */}
+                <CopyButton
+                  text={result.data.key}
+                  onError={() => {
+                    setRevealed(true)
+                    setCopyFailed(true)
+                  }}
+                />
               </div>
 
               <div className="pt-2 text-sm font-medium">接口地址（OpenAI 兼容）</div>
@@ -124,6 +136,7 @@ export function ModelAccessSection({ onNeedLogin }: { onNeedLogin: () => void })
                 <code className="flex h-8 min-w-0 flex-1 items-center overflow-x-auto whitespace-nowrap rounded-md border bg-muted px-3 font-mono text-xs">
                   {openAIEndpoint(result.data)}
                 </code>
+                {/* 接口地址本来就是明文显示的，复制失败只需要提示，不碰 Key */}
                 <CopyButton text={openAIEndpoint(result.data)} onError={() => setCopyFailed(true)} />
               </div>
 

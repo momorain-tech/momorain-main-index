@@ -9,14 +9,11 @@ import { UserNav } from "@/components/user-nav"
 // 登录态由 UserNav（Client Component）自行请求 /api/me，不经过 layout
 export function MainNav() {
   return (
-    <div className="flex w-full items-center justify-between gap-6">
+    <div className="flex w-full items-center justify-between gap-4 sm:gap-6">
       {/* 左侧：Logo + 站点名 */}
       <Link href="/" className="flex shrink-0 items-center space-x-2">
         <Icons.logo />
-        {/* 手机上只留图标：390px 宽时导航栏右侧有主题、管理、昵称、退出四样东西，
-            Logo 文字再占 85px，昵称就被挤得一个字都不剩（它是进账号页的唯一入口）。
-            sr-only 让读屏软件仍然能读出站点名 */}
-        <span className="sr-only font-bold sm:not-sr-only">{siteConfig.name}</span>
+        <span className="font-bold">{siteConfig.name}</span>
       </Link>
 
       {/* 中间：导航链接 */}

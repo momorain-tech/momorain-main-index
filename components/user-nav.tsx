@@ -13,17 +13,13 @@ import { buttonVariants } from "@/components/ui/button"
 export function UserNav() {
   // undefined = 加载中，null = 未登录
   const [user, setUser] = useState<SessionUser | null | undefined>(undefined)
-  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     fetch("/api/me")
       .then((res) => (res.ok ? res.json() : { user: null }))
       .then((data) => {
-        if (!cancelled) {
-          setUser(data.user ?? null)
-          setIsAdmin(data.isAdmin ?? false)
-        }
+        if (!cancelled) setUser(data.user ?? null)
       })
       .catch(() => {
         if (!cancelled) setUser(null)
@@ -54,15 +50,12 @@ export function UserNav() {
       // min-w-0：flex 子元素默认"至少和内容一样宽"，不加的话里面的昵称
       // 永远不会收缩，截断也就不会生效（这是 flex + truncate 最常见的坑）
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        {/* 只对超级用户显示入口；藏按钮只是体验，/admin 在服务端还有守卫 */}
-        {isAdmin && (
-          <Link
-            href="/admin"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
-          >
-            管理
-          </Link>
-        )}
+        {/* 这里刻意**没有**管理后台的入口，管理员直接访问 /admin（和 one-api 的
+            /one-api/admin 同一个做法）。以前是"只对管理员显示「管理」按钮"，
+            但判断在浏览器里做，意味着 /admin 这个地址写在发给每个人的 JS 里，
+            /api/me 也要对每个人返回 isAdmin 字段——等于告诉所有人"这里有个后台"。
+            注意这只是"不张扬"，不是访问控制：真正的防线是 /admin 布局和
+            /api/admin/* 在服务端的 requireAdmin() 校验。 */}
         {/* 点昵称进账号页（改昵称、看模型余额、复制 key）。
             原来这里有一个直接指向 /one-api 的「模型额度」按钮，已并入账号页：
             裸链到 /one-api 时，用户看到的是 one-api 自己的会话——可能是登录页，
@@ -76,7 +69,7 @@ export function UserNav() {
           href="/account"
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
-            "min-w-[3rem] max-w-[6rem] text-sm sm:max-w-[11rem]"
+            "min-w-[3rem] max-w-[6rem] px-2 text-sm sm:max-w-[11rem] sm:px-3"
           )}
           title={`${user.nickname} · 账号设置`}
         >

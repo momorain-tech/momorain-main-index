@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
-import { getCurrentUser, isAdmin } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { reportActive } from "@/lib/beacon"
 
 // GET /api/me —— 客户端导航栏查询当前登录态
@@ -32,9 +32,10 @@ export async function GET() {
   }
 
   return NextResponse.json(
-    // isAdmin 只影响导航栏显示"管理"入口，不是安全边界——
-    // 管理页面和 API 在服务端各自还会验一遍
-    { user, isAdmin: isAdmin(user) },
+    // 刻意不返回 isAdmin：这个接口每个访客都会调，
+    // 返回"你是不是管理员"等于向所有人宣告站点有管理后台。
+    // 管理员身份只在 /admin 和 /api/admin/* 的服务端判断（requireAdmin）
+    { user },
     // 登录态不允许被浏览器或中间层缓存
     { headers: { "Cache-Control": "no-store" } }
   )

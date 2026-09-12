@@ -1,10 +1,13 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
+import { notFound } from "next/navigation"
 
 import { getCurrentUser, isAdmin } from "@/lib/auth"
 
-// 管理后台的守卫：所有 /admin/* 页面都套在这个 layout 里，
-// 非超级用户一律跳回首页。
+// 管理后台的守卫：所有 /admin/* 页面都套在这个 layout 里。
+//
+// 这是**第二道**防线，第一道是 middleware.ts（非管理员在那里就被当成
+// "路径不存在"）。这里同样回 404 而不是跳回首页：跳转会让 /admin 和一个
+// 真不存在的地址表现不同，等于承认"这里有东西"。
 //
 // 这里调用了 cookies()（在 getCurrentUser 内部），所以 /admin 下的路由
 // 全部是每请求 SSR——这正是管理后台想要的（每次都看最新数据 + 最新登录态）。
@@ -16,7 +19,7 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const user = await getCurrentUser()
-  if (!user || !isAdmin(user)) redirect("/")
+  if (!isAdmin(user)) notFound()
 
   return (
     <div className="container max-w-5xl py-8">

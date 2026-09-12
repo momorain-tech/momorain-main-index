@@ -9,9 +9,9 @@ import { UserNav } from "@/components/user-nav"
 // 登录态由 UserNav（Client Component）自行请求 /api/me，不经过 layout
 export function MainNav() {
   return (
-    <div className="flex w-full items-center justify-between gap-6">
+    <div className="flex w-full items-center justify-between gap-4 sm:gap-6">
       {/* 左侧：Logo + 站点名 */}
-      <Link href="/" className="flex items-center space-x-2">
+      <Link href="/" className="flex shrink-0 items-center space-x-2">
         <Icons.logo />
         <span className="font-bold">{siteConfig.name}</span>
       </Link>
@@ -34,8 +34,10 @@ export function MainNav() {
         </Link>
       </nav>
 
-      {/* 右侧：主题切换 + 用户区域 */}
-      <div className="flex items-center gap-3">
+      {/* 右侧：主题切换 + 用户区域。
+          min-w-0 让这一组在窄屏上可以收缩（真正收缩的是 UserNav 里的昵称），
+          Logo 则 shrink-0 保持完整 */}
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <ModeToggle />
         <UserNav />
       </div>

@@ -1,64 +1,32 @@
-import { jwtVerify } from "jose"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
-export type SessionUser = {
-  userId: string
-  openid: string
-  // 后端签发 JWT 时已经把手机号脱敏成 138****1234 才写进 token。
-  // 原因：JWT 只是 base64 编码不是加密，任何拿到它的人都能解出内容，
-  // 完整手机号不该出现在这里。需要完整号码的场景由后端按 userId 查库。
-  phone: string
-  nickname: string
-  avatarUrl: string
-}
+import { isAdmin, verifySessionToken, type SessionUser } from "@/lib/session"
 
-// 超级用户白名单：ADMIN_USER_IDS 环境变量，逗号分隔多个 userId
-// 现阶段用户少，用白名单最简单；以后用户多了可升级为数据库 role 字段，
-// 只需改这个函数的实现，调用方不用动
-export function isAdmin(user: SessionUser | null): boolean {
-  if (!user) return false
-  const adminIds = (process.env.ADMIN_USER_IDS ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean)
-  return adminIds.includes(user.userId)
-}
+// 验签和管理员判断的实现在 lib/session.ts（middleware 也要用，见那边的说明）。
+// 这里转出一份，原来 import "@/lib/auth" 的地方不用改。
+export { isAdmin, type SessionUser }
 
 // 只能在服务端调用（Server Component / Route Handler / Server Action）
 // 浏览器里没有 cookies()，也不应该暴露 JWT_SECRET
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const cookieStore = await cookies()
-  const token = cookieStore.get("session")?.value
-  if (!token) return null
-
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const { payload } = await jwtVerify(token, secret)
-
-    return {
-      userId: payload.userId as string,
-      openid: payload.openid as string,
-      phone: (payload.phone as string) ?? "",
-      nickname: payload.nickname as string,
-      avatarUrl: (payload.avatarUrl as string) ?? "",
-    }
-  } catch {
-    // token 过期或签名错误，视为未登录
-    return null
-  }
+  return verifySessionToken(cookieStore.get("session")?.value)
 }
 
-// 管理 API 的统一门卫：不放行时返回错误响应，放行时返回 null
-// 每个 /api/admin/* 的 handler 开头都必须调用——前端把按钮藏起来
-// 只是体验，真正的安全边界在这里（任何人都可以直接 curl 这些接口）
+// 管理 API 的门卫：不放行时返回错误响应，放行时返回 null
+// 每个 /api/admin/* 的 handler 开头都必须调用。
+//
+// 这是**第二道**防线。第一道是 middleware.ts：非管理员的请求在那里就被当成
+// "路径不存在"，根本走不到这里。这道保留下来，是为了 middleware 的 matcher
+// 哪天被改漏了（比如新加的接口路径没被匹配上）时，接口仍然是关着的。
+//
+// 未登录和非管理员都回 404，不回 401 / 403：后两者等于告诉对方
+// "这个接口存在，只是你没权限"——这正是要藏起来的信息。
 export async function requireAdmin(): Promise<NextResponse | null> {
   const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 })
-  }
   if (!isAdmin(user)) {
-    return NextResponse.json({ error: "需要超级用户权限" }, { status: 403 })
+    return new NextResponse(null, { status: 404 })
   }
   return null
 }

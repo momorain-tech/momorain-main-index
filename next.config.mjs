@@ -25,10 +25,18 @@ const nextConfig = {
   async rewrites() {
     if (process.env.NODE_ENV === "production") return []
     const backendUrl = process.env.BACKEND_URL || "http://localhost:8000"
+    // one-api 同理：线上由 Traefik 把 /one-api 路由过去，本地开发靠这条转发。
+    // 账号页的余额和 key 取自 /one-api/api/momorain/provision。
+    // 本地起 one-api 的方法见 ../PLATFORM.md §6.1（BASE_PATH=/one-api，端口 3999）
+    const oneApiUrl = process.env.ONEAPI_URL || "http://localhost:3999"
     return [
       {
         source: "/api/auth/:path*",
         destination: `${backendUrl}/api/auth/:path*`,
+      },
+      {
+        source: "/one-api/:path*",
+        destination: `${oneApiUrl}/one-api/:path*`,
       },
     ]
   },

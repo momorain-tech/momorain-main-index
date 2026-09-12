@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 
 import type { SessionUser } from "@/lib/auth"
+import { USER_UPDATED_EVENT, type UserUpdatedDetail } from "@/lib/user-events"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
@@ -32,6 +33,19 @@ export function UserNav() {
     }
   }, [])
 
+  // 账号页改完昵称会广播一个事件（见 lib/user-events.ts），这里接住它更新显示。
+  // 不用重新请求 /api/me：事件里已经带着新值了。
+  useEffect(() => {
+    function onUpdated(e: Event) {
+      const detail = (e as CustomEvent<UserUpdatedDetail>).detail
+      // 函数式更新：基于"最新的 user"合并，而不是闭包里捕获的那个旧值
+      setUser((prev) => (prev ? { ...prev, ...detail } : prev))
+    }
+    window.addEventListener(USER_UPDATED_EVENT, onUpdated)
+    // 组件卸载时必须移除监听，否则每次挂载都多挂一个，越积越多
+    return () => window.removeEventListener(USER_UPDATED_EVENT, onUpdated)
+  }, [])
+
   // 占位尺寸与"登录"按钮一致，避免加载完成时导航栏跳动
   if (user === undefined) return <div className="h-8 w-[52px]" />
 
@@ -47,20 +61,18 @@ export function UserNav() {
             管理
           </Link>
         )}
-        {/* 模型额度入口：登录后才显示。
-            放这里而不是主导航，是因为它属于「我的账号」范畴——
-            没登录的访客点进去只会看到一个要求登录的页面。 */}
-        {/* 必须用 <a> 而不是 <Link>：/one-api 由 Traefik 路由到另一个独立应用，
-            不是本站的 Next 路由。<Link> 会做客户端导航，Next 在自己的路由表里
-            找不到它 → 404。这类跨应用链接一律用原生 <a> 触发整页跳转。 */}
-        <a
-          href="/one-api"
-          className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-          title="管理模型 API Key 与额度"
+        {/* 点昵称进账号页（改昵称、看模型余额、复制 key）。
+            原来这里有一个直接指向 /one-api 的「模型额度」按钮，已并入账号页：
+            裸链到 /one-api 时，用户看到的是 one-api 自己的会话——可能是登录页，
+            也可能是之前用 root 登录留下的别人的账号。账号页里的链接用的是
+            provision 返回的 consoleUrl，会先按当前身份换好会话再跳。 */}
+        <Link
+          href="/account"
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-sm")}
+          title="账号设置 · 模型额度"
         >
-          模型额度
-        </a>
-        <span className="text-sm font-medium">{user.nickname}</span>
+          {user.nickname}
+        </Link>
         {/* form POST 不需要 JS 状态，浏览器原生提交即可 */}
         <form method="POST" action="/auth/logout">
           <button

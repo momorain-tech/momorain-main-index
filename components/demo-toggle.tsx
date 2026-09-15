@@ -42,7 +42,13 @@ export function DemoToggle({ url }: { url: string }) {
             src={url}
             className="h-[600px] w-full"
             title="Demo 预览"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            // iframe 里的页面默认拿不到麦克风、写不了剪贴板、也不能触发下载——不管里面的站点自己怎么写。
+            // 这些权限要由外层（也就是这里）显式放行：
+            //   microphone       → 表达训练、Talk to 峰哥要录音
+            //   clipboard-write  → 视频转手绘的「复制文案」
+            //   allow-downloads  → 简历工坊下载 PDF、视频类项目下载成片
+            allow="microphone; clipboard-write"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
           />
         </div>
       )}

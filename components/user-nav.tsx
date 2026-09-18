@@ -75,8 +75,8 @@ export function UserNav() {
         >
           <span className="truncate">{user.nickname}</span>
         </Link>
-        {/* form POST 不需要 JS 状态，浏览器原生提交即可 */}
-        <form method="POST" action="/auth/logout">
+        {/* 原生 POST 到统一认证接口，Cookie 清理规则与登录保持一致 */}
+        <form method="POST" action="/api/auth/logout">
           <button
             type="submit"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}

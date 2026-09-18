@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server"
-
-// POST /auth/logout
-// JWT 是无状态的，退出只需删掉浏览器的 Cookie，不需要通知后端
-export async function POST(request: Request) {
-  // request.url 是 Next.js 内部地址（localhost:3000），直接用会让浏览器跳 localhost
-  // 浏览器发 form POST 时携带 Origin 头，里面是真实的外部域名
-  const origin = request.headers.get("origin") ?? request.url
-  const response = NextResponse.redirect(new URL("/", origin))
-  response.cookies.delete("session")
-  return response
+// POST /auth/logout — 兼容旧页面的退出入口。
+// 保留 POST 转到统一认证接口，由 user-login 按登录时的 Domain/Path 清理 Cookie。
+// 相对 Location 保持浏览器当前域名，不依赖 Origin 或反向代理的内部地址。
+// 此处 307 是为了保留 POST；认证接口清理完成后用 303 跳回首页。
+export async function POST() {
+  return new Response(null, {
+    status: 307,
+    headers: {
+      Location: "/api/auth/logout",
+      "Cache-Control": "no-store",
+    },
+  })
 }

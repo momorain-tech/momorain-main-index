@@ -413,3 +413,94 @@ export function BarList({
     </div>
   )
 }
+
+// ── 按天的柱状图（兼日期选择器）────────────────────────────────────
+
+export type DayColumn = {
+  /** 柱子下方的标签，传空串就不显示（天数多时只标少数几根） */
+  label: string
+  /** 主值：当天活跃人数 */
+  value: number
+  /** 叠加值：其中真的走了登录流程的人数。必然 ≤ value */
+  sub: number
+  /** 鼠标悬停时的说明，也是无障碍标签 */
+  title: string
+  /** 点这根柱子跳到哪一天 */
+  href: string
+  selected: boolean
+}
+
+/**
+ * 每根柱子都是一个链接——图表本身就是日期选择器。
+ *
+ * 为什么不做成下拉框或日历控件？那两样都需要客户端 JS，
+ * 而这个页面刻意保持零 JS。用 `<a href="?day=...">` 的话，
+ * 选日期就是一次普通的服务端渲染，浏览器的前进后退也天然可用。
+ *
+ * 「登录人数」不是堆叠在「活跃人数」上面，而是**画在它里面**：
+ * 登录的人本来就是活跃的人的子集，堆叠会让读者以为总数是两者之和。
+ * 包含关系要用包含的画法表达。
+ */
+export function DayColumns({
+  data,
+  height = 120,
+}: {
+  data: DayColumn[]
+  height?: number
+}) {
+  const max = Math.max(1, ...data.map((d) => d.value))
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-end gap-[3px]" style={{ height }}>
+        {data.map((d) => (
+          <a
+            key={d.href}
+            href={d.href}
+            title={d.title}
+            aria-label={d.title}
+            aria-current={d.selected ? "true" : undefined}
+            className={cn(
+              "group relative flex flex-1 flex-col justify-end rounded-sm transition-colors",
+              d.selected ? "bg-muted" : "hover:bg-muted/60"
+            )}
+            style={{ height }}
+          >
+            {/* 空数据的那天也要占位并可点击（高度 2px 的一道线），
+                否则「这天没人来」和「这天不在范围里」看起来一模一样 */}
+            <span
+              className="relative w-full rounded-t-sm"
+              style={{
+                height: `${Math.max((d.value / max) * (height - 12), d.value > 0 ? 3 : 2)}px`,
+                background: d.value > 0 ? "var(--funnel-1)" : "hsl(var(--border))",
+              }}
+              aria-hidden
+            >
+              <span
+                className="absolute bottom-0 left-0 w-full rounded-t-sm"
+                style={{
+                  height: `${(d.sub / Math.max(1, d.value)) * 100}%`,
+                  background: "var(--funnel-4)",
+                }}
+              />
+            </span>
+          </a>
+        ))}
+      </div>
+
+      <div className="flex gap-[3px]">
+        {data.map((d) => (
+          <span
+            key={d.href}
+            className={cn(
+              "flex-1 overflow-hidden text-center font-mono text-[9px]",
+              d.selected ? "font-bold text-foreground" : "text-muted-foreground"
+            )}
+          >
+            {d.selected ? d.label || "▲" : d.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}

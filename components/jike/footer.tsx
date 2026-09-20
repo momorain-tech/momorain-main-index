@@ -49,7 +49,13 @@ export function JikeFooter() {
             <h4>合作</h4>
             <Link href="/#dev">神器上架</Link>
             <Link href="/#subscribe">商务合作</Link>
-            <Link href="/#subscribe">联系我们</Link>
+            {/* 联系我们：微信二维码 + 微信号（替换原来的锚点链接） */}
+            <div className="footer-qr">
+              <span className="qr-label">联系我们</span>
+              {/* eslint-disable-next-line @next/next/no-img-element -- 静态二维码图片，无需 next/image 优化 */}
+              <img src="/wechat-qr.jpg" alt="微信二维码" className="qr-img" />
+              <p className="qr-id">微信号：instusehub_com</p>
+            </div>
           </div>
         </div>
         <div className="copyright">

@@ -718,6 +718,27 @@
   font-size: 14px;
 }
 .jk .footer-col h4 { font-size: 14px; margin-bottom: 16px; color: var(--jk-text-2); letter-spacing: 1px; }
+.jk .footer-qr { margin-top: 8px; }
+.jk .footer-qr .qr-label {
+  display: block;
+  font-size: 14px;
+  color: var(--jk-text-2);
+  margin-bottom: 10px;
+}
+.jk .footer-qr .qr-img {
+  display: block;
+  width: 128px;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--jk-card-border);
+}
+.jk .footer-qr .qr-id {
+  font-size: 13px;
+  color: var(--jk-text-2);
+  margin-top: 8px;
+  max-width: 128px;
+  word-break: break-all;
+}
 .jk .footer-col a { display: block; font-size: 14px; color: var(--jk-text-2); padding: 6px 0; transition: color 0.2s; }
 .jk .footer-col a:hover { color: var(--jk-text); }
 .jk .copyright {

@@ -39,7 +39,8 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        {/* 默认亮色：设计稿浅色版是主视觉（不跟随系统，用户可手动切深色） */}
+        <ThemeProvider attribute="class" defaultTheme="light">
           {children}
         </ThemeProvider>
       </body>

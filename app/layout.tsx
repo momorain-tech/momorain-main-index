@@ -5,8 +5,6 @@ import "@/app/globals.css"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider"
-import { MainNav } from "@/components/main-nav"
-import { SiteFooter } from "@/components/site-footer"
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -21,6 +19,10 @@ export const metadata: Metadata = {
   description: siteConfig.description,
 }
 
+// 根布局只留骨架（字体 + 主题），导航/页脚分两块各管各的：
+// - 公开页面 → app/(public)/layout.tsx（设计稿外壳 + .jk-skin 换肤）
+// - 管理后台 → app/admin/layout.tsx（自带头部，样式保持旧 shadcn）
+//
 // 注意：layout 里不要调用 cookies()/headers() 等动态 API，
 // 否则全站所有路由都会退出静态渲染。登录态由 UserNav 走 /api/me 获取。
 export default function RootLayout({
@@ -38,17 +40,7 @@ export default function RootLayout({
         )}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="flex min-h-screen flex-col">
-            <header className="container z-40 bg-background">
-              <div className="flex h-20 items-center justify-between py-6">
-                <MainNav />
-              </div>
-            </header>
-
-            <main className="flex-1">{children}</main>
-
-            <SiteFooter />
-          </div>
+          {children}
         </ThemeProvider>
       </body>
     </html>

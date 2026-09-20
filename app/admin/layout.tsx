@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { getCurrentUser, isAdmin } from "@/lib/auth"
+import { ModeToggle } from "@/components/mode-toggle"
 
 // 管理后台的守卫：所有 /admin/* 页面都套在这个 layout 里。
 //
@@ -30,12 +31,17 @@ export default async function AdminLayout({
             当前身份：{user.nickname}（超级用户）
           </p>
         </div>
-        <Link
-          href="/"
-          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          ← 返回首页
-        </Link>
+        {/* 主题切换原来在 MainNav 里；公开页换新导航后 MainNav 已移除，
+            后台需要自带一个切换入口 */}
+        <div className="flex items-center gap-4">
+          <ModeToggle />
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ← 返回首页
+          </Link>
+        </div>
       </div>
 
       {/* 模块导航。不做「高亮当前项」——那需要 usePathname，

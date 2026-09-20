@@ -101,10 +101,9 @@ RUN addgroup -g 1001 nodejs && adduser -D -u 1001 -G nodejs nextjs
 # standalone 产物已经包含了精简后的 node_modules 和 server.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# 注意：本项目没有 public/ 目录，所以这里不 COPY 它。
-# 将来如果添加了 public/（放 favicon、图片等静态资源），
-# 要在这里补上：COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-# 否则那些资源不会进镜像，线上会 404。
+# public/ 静态资源（2026-09-20 起有了：页脚微信二维码 wechat-qr.jpg）。
+# 不 COPY 的话这些资源不会进镜像，线上会 404。
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 EXPOSE 3000

@@ -15,7 +15,7 @@ export default function AdminPage() {
     {
       href: "/admin/projects",
       title: "项目管理",
-      desc: "首页展示的项目列表，含内部 Wiki",
+      desc: "项目内容、发布状态、预览，含内部 Wiki",
     },
   ]
 

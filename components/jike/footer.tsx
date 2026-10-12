@@ -1,66 +1,56 @@
-"use client"
-
 import Link from "next/link"
-import { useState } from "react"
 
-import { useToast } from "@/components/jike/toast"
+import { contactConfig } from "@/config/contact"
+import { siteConfig } from "@/config/site"
 
-// 设计稿页脚。邮箱订阅暂无后端，保留设计稿的 toast 占位行为
-// （设计稿 README：上线后接真实订阅 + 统计）。
+// 页脚。原来的邮箱订阅表单已删除：它没有后端，点「订阅」却提示「订阅成功」（§2.2）。
+// 等真的有地方存、有人负责发之后再加回来。
+//
+// 现在是纯服务端组件（没有任何交互），不再需要 "use client"。
+// 微信号和二维码从 config/contact.ts 读，和咨询面板是同一份。
 export function JikeFooter() {
-  const notify = useToast()
-  const [email, setEmail] = useState("")
-
-  function subscribe() {
-    notify(email.trim() ? "🎉 订阅成功！新神器上架，第一时间通知你" : "✏️ 先填个邮箱吧")
-    setEmail("")
-  }
-
   return (
-    <footer id="subscribe">
+    <footer>
       <div className="wrap">
         <div className="footer-grid">
           <div>
             <Link className="logo" href="/">
-              <span className="logo-mark">⚡</span>即刻体验
+              <span className="logo-mark">⚡</span>
+              {siteConfig.name}
             </Link>
             <p>
-              神器超市，点开就能用。
-              <br />
-              不用下载，群里还有人带你玩。
+              {siteConfig.brand} 帮助企业、内容团队和个人创业者，把具体需求落成可用、可部署、可展示、可管理的应用。
             </p>
-            <div className="subscribe">
-              <input
-                type="email"
-                value={email}
-                placeholder="你的邮箱，新神器上架第一时间通知"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <button onClick={subscribe}>订阅</button>
-            </div>
           </div>
           <div className="footer-col">
-            <h4>探索</h4>
-            <Link href="/#shelf">神器货架</Link>
-            <Link href="/#who">按身份挑</Link>
-            <Link href="/#custom">专属定制</Link>
+            <h4>了解我们</h4>
+            <Link href="/#services">服务内容</Link>
+            <Link href="/#projects">项目案例</Link>
+            <Link href="/#process">合作流程</Link>
+            <Link href="/#about">关于我们</Link>
+            <Link href="/#faq">常见问题</Link>
           </div>
           <div className="footer-col">
-            <h4>合作</h4>
-            <Link href="/#dev">神器上架</Link>
-            <Link href="/#subscribe">商务合作</Link>
-            {/* 联系我们：微信二维码 + 微信号（替换原来的锚点链接） */}
+            <h4>联系合作</h4>
             <div className="footer-qr">
-              <span className="qr-label">联系我们</span>
               {/* eslint-disable-next-line @next/next/no-img-element -- 静态二维码图片，无需 next/image 优化 */}
-              <img src="/wechat-qr.jpg" alt="微信二维码" className="qr-img" />
-              <p className="qr-id">微信号：instusehub_com</p>
+              <img
+                src={contactConfig.wechatQr}
+                alt={`微信二维码，微信号 ${contactConfig.wechatId}`}
+                className="qr-img"
+                loading="lazy"
+              />
+              <p className="qr-id">微信号：{contactConfig.wechatId}</p>
             </div>
           </div>
         </div>
         <div className="copyright">
-          <span>© 2026 即刻体验 · 网上的神器，点开就能用</span>
-          <span>为不会写代码的你准备</span>
+          <span>
+            © 2026 {siteConfig.name} · {siteConfig.brand}
+          </span>
+          <a href={siteConfig.links.github} target="_blank" rel="noreferrer">
+            GitHub · momorain-tech
+          </a>
         </div>
       </div>
     </footer>

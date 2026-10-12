@@ -1,10 +1,14 @@
 import { query, isDbConfigured } from "@/lib/db"
-import {
-  STATIC_RECOMMENDED,
-  STATIC_TRENDING,
-  STATIC_STARRED,
-} from "@/lib/projects-data"
+import { STATIC_PROJECTS } from "@/lib/projects-data"
+import type {
+  CaseContent,
+  Maturity,
+  Ownership,
+  ProjectCover,
+} from "@/lib/project-content"
 
+// 访客端看到的项目。注意这里**没有** wiki、category、published——
+// 能出现在这个类型里的字段，都是可以原样印到公开 HTML 里的
 export type Project = {
   slug: string
   icon: string
@@ -14,6 +18,11 @@ export type Project = {
   tags: string[]
   link?: string
   demo?: string
+  ownership?: Ownership // undefined = 还没评估（迁移 004 之前的老项目）
+  maturity?: Maturity
+  featured: boolean
+  cover?: ProjectCover
+  caseContent?: CaseContent
 }
 
 // MySQL 行的字段名（snake_case），与 Project 类型字段做映射
@@ -23,15 +32,24 @@ type ProjectRow = {
   name: string
   desc_short: string
   long_desc: string
-  tags: string[]      // JSON 列，mysql2 的 typeCast 会自动 parse
+  tags: string[] // JSON 列，mysql2 的 typeCast 会自动 parse
   link: string | null
   demo: string | null
-  category: "recommended" | "trending" | "starred"
+  ownership: Ownership | null
+  maturity: Maturity | null
+  featured: number // TINYINT(1)，mysql2 读出来是 0 / 1，不是布尔
+  cover: ProjectCover | null
+  case_content: CaseContent | null
 }
 
-// 显式列清单，与 ProjectRow 一一对应；schema 加列时这里不受影响
+// 显式列清单（不写 SELECT *）：wiki 这种内部字段就算以后表里再加，也不会被顺手带出来
 const PROJECT_COLUMNS =
-  "slug, icon, name, desc_short, long_desc, tags, link, demo, category"
+  "slug, icon, name, desc_short, long_desc, tags, link, demo, " +
+  "ownership, maturity, featured, cover, case_content"
+
+// 公开查询的唯一过滤条件。首页、详情、预渲染清单三处共用这一个常量——
+// 如果有一处忘了加，下架的项目就会从那一处漏出来（§9.3 第 6 条）
+const PUBLIC_FILTER = "published = 1"
 
 function rowToProject(row: ProjectRow): Project {
   return {
@@ -43,6 +61,11 @@ function rowToProject(row: ProjectRow): Project {
     tags: row.tags,
     link: row.link ?? undefined,
     demo: row.demo ?? undefined,
+    ownership: row.ownership ?? undefined,
+    maturity: row.maturity ?? undefined,
+    featured: row.featured === 1,
+    cover: row.cover ?? undefined,
+    caseContent: row.case_content ?? undefined,
   }
 }
 
@@ -64,54 +87,41 @@ function useDb(): boolean {
 
 // ─── 公开 API ─────────────────────────────────────────────────────
 
-// 首页三个分区的项目列表
+// 首页：全部已发布项目（排序沿用后台的分区 + 分区内排序），以及从中挑出的精选。
+// category 不再表示「热门 / 用户收藏」——那是用户行为数据，我们没有；
+// 它现在只是后台排序用的分组
 export async function getHomeProjects(): Promise<{
-  recommended: Project[]
-  trending: Project[]
-  starred: Project[]
+  featured: Project[]
+  all: Project[]
 }> {
-  if (!useDb()) {
-    return {
-      recommended: STATIC_RECOMMENDED,
-      trending: STATIC_TRENDING,
-      starred: STATIC_STARRED,
-    }
-  }
-
-  const rows = await query<ProjectRow>(
-    `SELECT ${PROJECT_COLUMNS} FROM projects ORDER BY category, sort_order`
-  )
-  return {
-    recommended: rows.filter((r) => r.category === "recommended").map(rowToProject),
-    trending:    rows.filter((r) => r.category === "trending").map(rowToProject),
-    starred:     rows.filter((r) => r.category === "starred").map(rowToProject),
-  }
+  const all = useDb()
+    ? (
+        await query<ProjectRow>(
+          `SELECT ${PROJECT_COLUMNS} FROM projects
+           WHERE ${PUBLIC_FILTER}
+           ORDER BY category, sort_order`
+        )
+      ).map(rowToProject)
+    : STATIC_PROJECTS
+  return { featured: all.filter((p) => p.featured), all }
 }
 
-// 所有 slug，用于 generateStaticParams 预渲染
+// 所有公开 slug，用于 generateStaticParams 预渲染
 export async function getAllSlugs(): Promise<string[]> {
-  if (!useDb()) {
-    return [
-      ...STATIC_RECOMMENDED,
-      ...STATIC_TRENDING,
-      ...STATIC_STARRED,
-    ].map((p) => p.slug)
-  }
+  if (!useDb()) return STATIC_PROJECTS.map((p) => p.slug)
 
-  const rows = await query<{ slug: string }>("SELECT slug FROM projects")
+  const rows = await query<{ slug: string }>(
+    `SELECT slug FROM projects WHERE ${PUBLIC_FILTER}`
+  )
   return rows.map((r) => r.slug)
 }
 
-// 单个项目详情，用于详情页
+// 单个项目详情。未发布的项目和不存在的项目一样返回 undefined → 详情页 404
 export async function getProjectBySlug(slug: string): Promise<Project | undefined> {
-  if (!useDb()) {
-    return [...STATIC_RECOMMENDED, ...STATIC_TRENDING, ...STATIC_STARRED].find(
-      (p) => p.slug === slug
-    )
-  }
+  if (!useDb()) return STATIC_PROJECTS.find((p) => p.slug === slug)
 
   const rows = await query<ProjectRow>(
-    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE slug = ? LIMIT 1`,
+    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE slug = ? AND ${PUBLIC_FILTER} LIMIT 1`,
     [slug]
   )
   return rows[0] ? rowToProject(rows[0]) : undefined

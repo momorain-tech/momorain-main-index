@@ -30,7 +30,11 @@ export async function POST(request: Request) {
 
   const result = validateProjectInput(body)
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 400 })
+    // 422 = 格式没问题，但内容还不够发布（附缺项清单）；400 = 格式本身不对
+    return NextResponse.json(
+      { error: result.error, missing: result.missing },
+      { status: result.missing ? 422 : 400 }
+    )
   }
 
   try {

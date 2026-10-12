@@ -5,14 +5,22 @@ import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 
-// 删除是不可恢复操作，用浏览器原生 confirm 做二次确认——
-// 管理后台只有自己人用，不值得为此引入一个模态框组件
+// 删除是不可恢复操作（案例内容、wiki 一起没了）。平时要下线一个项目应该用「撤下」，
+// 所以这里的确认故意做得麻烦一点：要手动输入 slug 才删（§8.3「增加明确确认」）。
+// 用浏览器原生 prompt——管理后台只有自己人用，不值得为此引入一个模态框组件
 export function DeleteProjectButton({ slug, name }: { slug: string; name: string }) {
   const router = useRouter()
   const [deleting, setDeleting] = useState(false)
 
   async function handleDelete() {
-    if (!window.confirm(`确定删除「${name}」？此操作不可恢复。`)) return
+    const typed = window.prompt(
+      `删除「${name}」不可恢复，内容和 wiki 会一起删掉。\n只是想让它从前台消失的话，请用「撤下」。\n\n确定要删除，请输入 slug：${slug}`
+    )
+    if (typed === null) return
+    if (typed.trim() !== slug) {
+      window.alert("输入的 slug 不一致，没有删除")
+      return
+    }
 
     setDeleting(true)
     const res = await fetch(`/api/admin/projects/${slug}`, {

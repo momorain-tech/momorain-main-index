@@ -1,15 +1,11 @@
 import Link from "next/link"
 
-import { getAdminProjects, type AdminProject } from "@/lib/projects-admin"
+import { getAdminProjects } from "@/lib/projects-admin"
+import { MATURITY_LABELS, OWNERSHIP_LABELS, checkPublish } from "@/lib/project-content"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { DeleteProjectButton } from "@/components/admin/delete-project-button"
-
-const CATEGORY_LABELS: Record<AdminProject["category"], string> = {
-  recommended: "猜你喜欢",
-  trending: "当前最热",
-  starred: "用户收藏",
-}
+import { ProjectStatusButton } from "@/components/admin/project-status-button"
 
 // 项目管理列表。上层 layout 已做权限守卫 + 使页面成为每请求 SSR，
 // 所以这里每次访问都是数据库里的最新数据
@@ -28,14 +24,17 @@ export default async function AdminProjectsPage() {
     )
   }
 
+  const publishedCount = projects.filter((p) => p.published).length
+  const featuredCount = projects.filter((p) => p.featured).length
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">共 {projects.length} 个项目</p>
-        <Link
-          href="/admin/projects/new"
-          className={cn(buttonVariants({ size: "sm" }))}
-        >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          共 {projects.length} 个项目 · 已发布 {publishedCount} · 精选 {featuredCount}
+          {featuredCount < 2 && "（上线要求至少 2 个精选）"}
+        </p>
+        <Link href="/admin/projects/new" className={cn(buttonVariants({ size: "sm" }))}>
           新建项目
         </Link>
       </div>
@@ -46,50 +45,81 @@ export default async function AdminProjectsPage() {
           <thead>
             <tr className="border-b bg-muted/50 text-left">
               <th className="px-4 py-3 font-medium">项目</th>
-              <th className="px-4 py-3 font-medium">slug</th>
-              <th className="px-4 py-3 font-medium">分区</th>
-              <th className="px-4 py-3 font-medium">排序</th>
+              <th className="px-4 py-3 font-medium">状态</th>
+              <th className="px-4 py-3 font-medium">归属 / 成熟度</th>
+              <th className="px-4 py-3 font-medium">发布检查</th>
               <th className="px-4 py-3 text-right font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
-            {projects.map((project) => (
-              <tr key={project.slug} className="border-b last:border-0 hover:bg-muted/30">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl leading-none">{project.icon}</span>
-                    <div>
-                      <p className="font-medium">{project.name}</p>
-                      <p className="max-w-[280px] truncate text-xs text-muted-foreground">
-                        {project.desc}
-                      </p>
+            {projects.map((project) => {
+              const missing = checkPublish(project)
+              return (
+                <tr key={project.slug} className="border-b last:border-0 hover:bg-muted/30">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl leading-none">{project.icon}</span>
+                      <div>
+                        <p className="font-medium">{project.name}</p>
+                        <p className="font-mono text-xs text-muted-foreground">{project.slug}</p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                  {project.slug}
-                </td>
-                <td className="px-4 py-3">{CATEGORY_LABELS[project.category]}</td>
-                <td className="px-4 py-3">{project.sortOrder}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-2">
-                    <Link
-                      href={`/admin/projects/${project.slug}/wiki`}
-                      className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-                    >
-                      Wiki
-                    </Link>
-                    <Link
-                      href={`/admin/projects/${project.slug}`}
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                    >
-                      编辑
-                    </Link>
-                    <DeleteProjectButton slug={project.slug} name={project.name} />
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    {project.published ? "已发布" : <span className="text-muted-foreground">未发布</span>}
+                    {project.featured && " · 精选"}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                    {project.ownership ? OWNERSHIP_LABELS[project.ownership] : "未评估"} /{" "}
+                    {project.maturity ? MATURITY_LABELS[project.maturity] : "未评估"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {missing.length === 0 ? (
+                      <span className="text-green-600 dark:text-green-400">通过</span>
+                    ) : (
+                      // title：鼠标悬停看具体缺哪些；编辑页上有完整清单
+                      <span
+                        className="text-amber-600 dark:text-amber-400"
+                        title={missing.join("\n")}
+                      >
+                        缺 {missing.length} 项
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/admin/projects/${project.slug}/preview`}
+                        className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                      >
+                        预览
+                      </Link>
+                      <Link
+                        href={`/admin/projects/${project.slug}/wiki`}
+                        className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                      >
+                        Wiki
+                      </Link>
+                      {project.published && project.maturity === "interactive" && (
+                        <ProjectStatusButton slug={project.slug} action="stop-trial" />
+                      )}
+                      {project.published ? (
+                        <ProjectStatusButton slug={project.slug} action="unpublish" />
+                      ) : (
+                        missing.length === 0 && <ProjectStatusButton slug={project.slug} action="publish" />
+                      )}
+                      <Link
+                        href={`/admin/projects/${project.slug}`}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                      >
+                        编辑
+                      </Link>
+                      <DeleteProjectButton slug={project.slug} name={project.name} />
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

@@ -13,8 +13,9 @@ const fontSans = FontSans({
 
 export const metadata: Metadata = {
   title: {
-    default: siteConfig.name,
-    template: `%s | ${siteConfig.name}`,
+    // 「即刻体验 · momorain」：站名 + 母品牌署名（§1.1）
+    default: `${siteConfig.name} · ${siteConfig.brand}`,
+    template: `%s | ${siteConfig.name} · ${siteConfig.brand}`,
   },
   description: siteConfig.description,
 }

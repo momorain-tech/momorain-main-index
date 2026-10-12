@@ -235,6 +235,46 @@
   box-shadow: 0 6px 26px var(--jk-btn-shadow-hover);
 }
 
+/* ── 汉堡菜单（≤768px 时导航链接收进这里，替代设计稿的 display:none） ── */
+.jk .nav-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--jk-border-2);
+  border-radius: 10px;
+  background: var(--jk-fill-2);
+  color: var(--jk-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s;
+}
+.jk .nav-burger:hover { border-color: var(--jk-cyan-soft-border); background: var(--jk-cyan-soft-bg); }
+/* 菜单容器挂在 nav 底下。注意遮罩不能用 position:fixed：
+   nav 有 backdrop-filter，会成为 fixed 后代的包含块，inset:0 会缩成 nav 那么大 */
+.jk .nav-menu { position: absolute; top: 100%; left: 0; right: 0; }
+.jk .nav-menu-backdrop { position: absolute; top: 0; left: 0; right: 0; height: 100vh; }
+.jk .nav-menu-panel {
+  position: relative;
+  z-index: 1;
+  background: var(--jk-card);
+  border-bottom: 1px solid var(--jk-card-border);
+  box-shadow: 0 16px 44px var(--jk-hover-shadow);
+  display: flex;
+  flex-direction: column;
+  padding: 8px 24px 12px;
+}
+.jk .nav-menu-panel a {
+  padding: 13px 0;
+  font-size: 15px;
+  color: var(--jk-text-2);
+  border-bottom: 1px solid var(--jk-card-border);
+  transition: color 0.2s;
+}
+.jk .nav-menu-panel a:last-child { border-bottom: none; }
+.jk .nav-menu-panel a:hover { color: var(--jk-text); }
+
 /* ── Hero ── */
 .jk .hero { text-align: center; padding: 88px 0 40px; position: relative; }
 .jk .hero-badge {
@@ -786,9 +826,16 @@
 /* ── 移动端（对应设计稿 768px 断点） ── */
 @media (max-width: 768px) {
   .jk .nav-links { display: none; }
+  .jk .nav-burger { display: inline-flex; }
   .jk .hero { padding: 60px 0 30px; }
   .jk section { padding: 56px 0; }
   .jk .contrast { grid-template-columns: 1fr; }
   .jk .vs { transform: rotate(90deg); margin: 0 auto; }
   .jk .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+}
+/* 小屏再收一点 CTA 和间距，给汉堡按钮让位（设计稿原移动端没有汉堡，
+   新增按钮后 390px 宽度下导航要更紧凑才放得下） */
+@media (max-width: 480px) {
+  .jk .nav-inner > .flex { gap: 8px; }
+  .jk .nav-cta { padding: 9px 14px; }
 }

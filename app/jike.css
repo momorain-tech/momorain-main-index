@@ -61,6 +61,14 @@
   --jk-pop-shadow: rgba(0, 0, 0, 0.15);
   --jk-btn-shadow: rgba(107, 70, 255, 0.3);
   --jk-btn-shadow-hover: rgba(107, 70, 255, 0.45);
+
+  /* 间距令牌（2026-10-13 紧凑化）。对齐靠的是「同一类东西用同一个数」：
+     所有卡片之间的缝都是 --jk-gap，所有大卡片的内边距都是 --jk-pad，
+     于是不同卡片里的文字左边缘会落在同一条竖线上。和颜色无关，深色模式不用重复定义 */
+  --jk-gap: 20px;        /* 卡片与卡片之间（横向、纵向一样宽） */
+  --jk-pad: 24px;        /* 大卡片内边距：入口卡、联系卡、微信卡、首屏流程卡 */
+  --jk-pad-sm: 20px;     /* 作品卡片内边距（一行三张，窄一点） */
+  --jk-section-y: 64px;  /* 首页每个大区块的上下留白 */
 }
 
 /* ── 设计变量：深色（= 设计稿原版） ── */
@@ -306,7 +314,7 @@
 }
 
 /* ── 通用 section ── */
-.jk section { padding: 80px 0; }
+.jk section { padding: var(--jk-section-y) 0; }
 .jk .sec-head { text-align: center; margin-bottom: 52px; }
 .jk .sec-head .kicker {
   display: inline-block;
@@ -427,15 +435,16 @@
 .jk dl dt { font-size: 12.5px; color: var(--jk-text-3); letter-spacing: 1px; margin-top: 10px; }
 .jk dl dd { margin: 2px 0 0; font-size: 14.5px; color: var(--jk-text-2); }
 
-/* ── 区块小标题（kicker：标题上方的英文小字） ── */
+/* ── 区块小标题（kicker：标题上方的英文小字） ──
+   首页和提供者页共用一套：同一种角色的文字长得一样，页面才显得整齐 */
 .jk .kicker {
   display: inline-block;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 3px;
-  color: var(--jk-accent-2);
+  letter-spacing: 2px;
+  color: var(--jk-accent-soft-text);
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 /* ── FAQ（原生 details/summary） ── */
@@ -456,41 +465,45 @@
 .jk .faq-item p { color: var(--jk-text-2); font-size: 14.5px; padding-bottom: 18px; }
 
 /* ── 项目详情（§5.2） ── */
-.jk .detail { padding-top: 32px; padding-bottom: 40px; max-width: 920px; }
+.jk .detail { padding-top: 16px; padding-bottom: 40px; max-width: 920px; }
 .jk .detail-back { display: inline-flex; align-items: center; min-height: 44px; color: var(--jk-text-2); font-size: 14px; }
 .jk .detail-back:hover { color: var(--jk-text); }
-.jk .detail-head { display: flex; gap: 22px; align-items: flex-start; margin: 16px 0 12px; }
+.jk .detail-head { display: flex; gap: 20px; align-items: flex-start; margin: 8px 0 0; }
 .jk .detail-icon { width: 72px; height: 72px; font-size: 36px; border-radius: 18px; }
 .jk .detail-head h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800; line-height: 1.25; }
-.jk .detail-sub { color: var(--jk-text-2); font-size: 17px; margin: 8px 0 6px; }
-.jk .detail-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-.jk .detail-note { margin-top: 12px; font-size: 13.5px; color: var(--jk-amber-text); }
+.jk .detail-sub { color: var(--jk-text-2); font-size: 17px; margin: 6px 0 4px; }
+.jk .detail-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+.jk .detail-note { margin-top: 10px; font-size: 13.5px; color: var(--jk-amber-text); }
 .jk .detail-section {
-  padding: 32px 0 0;
-  margin-top: 32px;
+  padding: 24px 0 0;
+  margin-top: 24px;
   border-top: 1px solid var(--jk-card-border);
 }
-.jk .detail-section h2 { font-size: 21px; font-weight: 800; margin-bottom: 14px; }
+.jk .detail-section h2 { font-size: 21px; font-weight: 800; margin-bottom: 10px; }
 .jk .detail-section > p { color: var(--jk-text-2); }
-.jk .detail-muted { color: var(--jk-text-3) !important; font-size: 14px; margin-bottom: 16px; }
-.jk .detail-field { margin-top: 16px; }
+.jk .detail-muted { color: var(--jk-text-3) !important; font-size: 14px; margin-bottom: 12px; }
+.jk .detail-field { margin-top: 12px; }
 .jk .detail-field h3 { font-size: 13px; color: var(--jk-text-3); letter-spacing: 1px; margin-bottom: 4px; font-weight: 600; }
 .jk .detail-field p, .jk .detail-field li { color: var(--jk-text-2); }
 .jk .detail-field ul { padding-left: 1.2em; list-style: disc; }
 .jk .detail-steps { margin-top: 14px; padding-left: 1.4em; list-style: decimal; color: var(--jk-text-2); }
 .jk .detail-steps li { padding: 3px 0; }
-.jk .detail-goals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.jk .detail-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 32px; }
+.jk .detail-goals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--jk-gap); }
+.jk .detail-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
 .jk .detail-pending { opacity: 0.75; }
 .jk .detail-pending p { color: var(--jk-amber-text); font-size: 14px; }
-.jk .detail-back-bottom { margin-top: 24px; }
+/* 底部两行链接：第一行和上面的卡片拉开，第二行紧跟第一行，读起来是一组 */
+.jk .detail-back-bottom { margin-top: 16px; }
+.jk .detail-back-bottom + .detail-back-bottom { margin-top: 0; }
 .jk .detail-back-bottom a { color: var(--jk-text-2); }
+/* 「我有类似需求」按钮和下面的微信卡片之间留一条缝，不然按钮的阴影直接压在卡片边框上 */
+.jk .detail-actions + .consult-card { margin-top: 16px; }
 .jk #contact .consult-card,
 .jk .detail .consult-card {
   background: var(--jk-card);
   border: 1px solid var(--jk-card-border);
   border-radius: var(--jk-radius);
-  padding: 22px;
+  padding: var(--jk-pad);
 }
 
 /* 成果 */
@@ -660,7 +673,7 @@
 @media (max-width: 768px) {
   .jk .nav-links { display: none; }
   .jk .nav-burger { display: inline-flex; }
-  .jk section { padding: 56px 0; }
+  .jk { --jk-section-y: 44px; --jk-gap: 16px; }
   .jk .detail-goals { grid-template-columns: 1fr; }
   .jk .detail-head { flex-direction: column; gap: 14px; }
 }
@@ -687,76 +700,105 @@
 .jk :is(header, section, details)[id] { scroll-margin-top: 84px; }
 .jk a:focus-visible, .jk button:focus-visible, .consult-dialog button:focus-visible,
 .jk summary:focus-visible { outline: 2px solid var(--jk-accent); outline-offset: 4px; }
-.jk .platform-hero { padding: 76px 0 0; }
-.jk .platform-hero-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .85fr); gap: 64px; align-items: center; }
-.jk .platform-eyebrow { display: inline-flex; align-items: center; gap: 9px; color: var(--jk-accent-soft-text); font-size: 13px; font-weight: 600; }
+.jk .platform-hero { padding: 56px 0 0; }
+/* 左右两栏等高（stretch）：右边流程卡的上沿对齐左边第一行小字，下沿对齐左边最后一行说明，
+   两栏看起来是一个整体，而不是两块各自居中、上下边都差几像素的东西 */
+.jk .platform-hero-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .85fr); gap: 56px; align-items: stretch; }
+/* 用 flex（块级）而不是 inline-flex：行内元素会被父元素 1.6 倍的行高撑出一截空白，
+   小字就比右边卡片的上沿低几个像素 */
+.jk .platform-eyebrow { display: flex; width: fit-content; align-items: center; gap: 9px; color: var(--jk-accent-soft-text); font-size: 13px; font-weight: 600; line-height: 1; }
 .jk .platform-eyebrow > span { width: 7px; height: 7px; border-radius: 50%; background: var(--jk-accent); }
-.jk .platform-hero h1 { font-size: clamp(36px, 4.3vw, 60px); line-height: 1.22; font-weight: 800; margin: 22px 0; letter-spacing: -1.6px; }
-.jk .platform-lead { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
-.jk .platform-description { color: var(--jk-text-2); max-width: 560px; line-height: 1.85; }
-.jk .platform-hero .hero-cta { justify-content: flex-start; margin-top: 26px; gap: 12px; }
+.jk .platform-hero h1 { font-size: clamp(36px, 4.3vw, 60px); line-height: 1.2; font-weight: 800; margin: 16px 0; letter-spacing: -1.6px; }
+.jk .platform-lead { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.jk .platform-description { color: var(--jk-text-2); max-width: 560px; line-height: 1.8; }
+.jk .platform-hero .hero-cta { justify-content: flex-start; margin: 24px 0 0; gap: 12px; }
 .jk .platform-hero :is(.btn-primary, .btn-ghost) { padding: 12px 22px; font-size: 15px; gap: 8px; }
-.jk .platform-note { font-size: 12.5px; color: var(--jk-text-2); margin-top: 16px; }
-.jk .platform-map { border: 1px solid var(--jk-card-border); border-radius: 20px; background: var(--jk-card); padding: 26px; }
-.jk .platform-map-top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--jk-text-2); padding-bottom: 16px; }
-.jk .platform-map-row { display: flex; align-items: center; gap: 14px; padding: 22px 0; border-top: 1px solid var(--jk-card-border); }
+.jk .platform-note { font-size: 12.5px; color: var(--jk-text-2); margin-top: 12px; line-height: 1.4; }
+/* 流程卡竖排：三行平分卡片高度（flex: 1），卡片被拉高时多出的空间均匀分给每一行 */
+.jk .platform-map { display: flex; flex-direction: column; border: 1px solid var(--jk-card-border); border-radius: var(--jk-radius); background: var(--jk-card); padding: 4px var(--jk-pad); }
+.jk .platform-map-top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--jk-text-2); padding: 14px 0; }
+.jk .platform-map-row { flex: 1; display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--jk-card-border); }
 .jk .platform-map-row > svg { margin-left: auto; flex-shrink: 0; color: var(--jk-text-2); }
 .jk .platform-map-row b { font-size: 17px; }
-.jk .platform-map-row p { font-size: 12.5px; color: var(--jk-text-2); margin-top: 3px; }
+.jk .platform-map-row p { font-size: 12.5px; color: var(--jk-text-2); margin-top: 2px; }
 .jk .map-number { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--jk-accent-soft-bg); color: var(--jk-accent-soft-text); font-size: 12px; font-weight: 700; flex-shrink: 0; }
-.jk .platform-map-foot { display: flex; gap: 8px; align-items: center; color: var(--jk-text-2); font-size: 12.5px; padding-top: 18px; border-top: 1px solid var(--jk-card-border); }
-.jk .platform-goals { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; margin-top: 56px; padding: 22px 0; border-block: 1px solid var(--jk-card-border); }
+/* 顶栏图标、每行箭头、底栏握手图标都贴着同一条右/左边线：它们都在卡片的 padding 之内，不再单独缩进 */
+.jk .platform-map-foot { display: flex; gap: 8px; align-items: center; color: var(--jk-text-2); font-size: 12.5px; padding: 14px 0; border-top: 1px solid var(--jk-card-border); }
+.jk .platform-goals { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: 40px; padding: 16px 0; border-block: 1px solid var(--jk-card-border); }
 .jk .platform-goals > span { display: inline-flex; gap: 7px; align-items: center; font-size: 14px; font-weight: 600; }
 .jk .platform-goals svg { color: var(--jk-accent-soft-text); }
 .jk .platform-goals small { color: var(--jk-text-2); margin-left: auto; font-size: 12.5px; }
-.jk .sec-head { text-align: left; margin-bottom: 32px; }
+.jk .sec-head { text-align: left; margin-bottom: 24px; }
+.jk .sec-head h2 { margin-bottom: 8px; line-height: 1.3; }
 .jk .sec-head p { margin: 0; max-width: 700px; }
-.jk .sec-head .kicker { color: var(--jk-accent-soft-text); font-size: 11px; letter-spacing: 2px; }
-.jk .participation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-.jk .participation-card { border: 1px solid var(--jk-card-border); background: var(--jk-card); border-radius: 16px; padding: 32px; }
-.jk .path-index { font-size: 12px; color: var(--jk-accent-soft-text); font-weight: 700; }
-.jk .participation-card h3 { font-size: 26px; font-weight: 700; margin: 14px 0 10px; }
-.jk .participation-card > p { color: var(--jk-text-2); font-size: 15px; min-height: 48px; max-width: 400px; }
-.jk .participation-card ol { display: flex; flex-wrap: wrap; gap: 10px 16px; list-style: none; padding: 20px 0 26px; }
+.jk .sec-head .kicker { color: var(--jk-accent-soft-text); font-size: 11px; letter-spacing: 2px; margin-bottom: 8px; }
+/* subgrid：两张卡片的 5 行（序号、标题、说明、步骤、按钮）共用外层网格的行，
+   一张卡的说明折成两行时，另一张卡的步骤和按钮也跟着下移，同类内容始终在同一水平线上。
+   卡片内部行距由各元素的 margin/padding 控制，所以卡片自己的 row-gap 设为 0 */
+.jk .participation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); gap: var(--jk-gap); }
+.jk .participation-card { display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 0; justify-items: start; align-content: start; border: 1px solid var(--jk-card-border); background: var(--jk-card); border-radius: var(--jk-radius); padding: var(--jk-pad); }
+.jk .path-index { font-size: 12px; color: var(--jk-accent-soft-text); font-weight: 700; line-height: 1.4; }
+.jk .participation-card h3 { font-size: 24px; font-weight: 700; margin: 8px 0 6px; line-height: 1.35; }
+.jk .participation-card > p { color: var(--jk-text-2); font-size: 15px; }
+.jk .participation-card ol { display: flex; flex-wrap: wrap; gap: 8px 16px; list-style: none; padding: 12px 0 20px; }
 .jk .participation-card li { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--jk-text-2); }
 .jk .participation-card li span { font-weight: 700; color: var(--jk-accent-soft-text); }
+.jk .participation-card > .btn-md { align-self: end; }
 .jk .btn-md { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
-.jk .platform-details { margin-top: 24px; border: 1px solid var(--jk-card-border); border-radius: 12px; background: var(--jk-card); }
-.jk .platform-details > summary { cursor: pointer; padding: 16px 22px; font-size: 14px; color: var(--jk-text-2); }
-.jk .platform-details-body { padding: 0 22px 22px; font-size: 14px; color: var(--jk-text-2); }
-.jk .platform-details-body > p { margin-bottom: 14px; }
-.jk .platform-details .faq-list { max-width: none; margin-top: 18px; }
+/* 折叠面板的左右内边距也用 --jk-pad：展开前后，里面的字和上面两张卡片里的字左对齐 */
+.jk .platform-details { margin-top: var(--jk-gap); border: 1px solid var(--jk-card-border); border-radius: 12px; background: var(--jk-card); }
+.jk .platform-details > summary { cursor: pointer; padding: 14px var(--jk-pad); font-size: 14px; color: var(--jk-text-2); }
+.jk .platform-details-body { padding: 0 var(--jk-pad) var(--jk-pad); font-size: 14px; color: var(--jk-text-2); }
+.jk .platform-details-body > p { margin-bottom: 12px; }
+.jk .platform-details .faq-list { max-width: none; margin-top: 16px; gap: 8px; }
 .jk .demo-section { background: var(--jk-fill-2); }
-.jk .demo-featured-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-.jk .other-demos-title { font-size: 18px; margin: 36px 0 20px; font-weight: 700; }
-.jk .proj-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.jk .demo-featured-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--jk-gap); }
+.jk .other-demos-title { font-size: 18px; margin: 28px 0 16px; font-weight: 700; }
+.jk .proj-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--jk-gap); }
 .jk .demo-card { padding: 0; gap: 0; overflow: hidden; border-radius: 14px; }
 .jk .demo-card:hover { transform: none; box-shadow: none; border-color: var(--jk-hover-border); }
-.jk .demo-card-body { padding: 22px; display: flex; flex-direction: column; flex: 1; }
+/* 底部 padding 比四周小：底栏的链接自带 44px 高的点击区，文字在里面垂直居中，
+   上下已经各有十来像素的空白，再给满 20px 底边会显得卡片底部特别空 */
+.jk .demo-card-body { padding: var(--jk-pad-sm) var(--jk-pad-sm) 6px; display: flex; flex-direction: column; flex: 1; }
 .jk .demo-cover { display: block; position: relative; aspect-ratio: 16/10; background: var(--jk-fill-2); overflow: hidden; }
 .jk .demo-cover img { width: 100%; height: 100%; object-fit: cover; }
-.jk .demo-cover-status { position: absolute; left: 14px; top: 14px; padding: 4px 10px; border-radius: 6px; background: var(--jk-card); color: var(--jk-text); font-size: 11px; border: 1px solid var(--jk-card-border); }
-.jk .demo-card .proj-name { font-size: 21px; margin: 8px 0 10px; }
+.jk .demo-cover-status { position: absolute; left: var(--jk-pad-sm); top: 14px; padding: 4px 10px; border-radius: 6px; background: var(--jk-card); color: var(--jk-text); font-size: 11px; border: 1px solid var(--jk-card-border); }
+/* 标题默认贴着卡片顶部；只有上面有「自研 / 可在线体验」这类标签时才空出 8px。
+   以前固定 margin-top: 8px，没有标签的卡片顶部就会比有封面的卡片多出一截 */
+.jk .demo-card .proj-name { font-size: 20px; margin: 0 0 6px; line-height: 1.4; }
+.jk .demo-card .proj-labels + .proj-name { margin-top: 8px; }
 .jk .demo-card-featured .proj-name { font-size: 24px; }
-.jk .demo-card .proj-desc { font-size: 14px; line-height: 1.75; margin: 0 0 16px; }
-.jk .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-.jk .demo-tags > span { font-size: 11px; padding: 4px 9px; background: var(--jk-fill-2); border-radius: 5px; color: var(--jk-text-2); }
-.jk .demo-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--jk-card-border); }
+.jk .demo-card .proj-desc { font-size: 14px; line-height: 1.7; margin: 0 0 12px; }
+.jk .demo-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.jk .demo-tags > span { font-size: 11px; line-height: 1.5; padding: 3px 8px; background: var(--jk-fill-2); border-radius: 5px; color: var(--jk-text-2); }
+.jk .demo-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 2px; border-top: 1px solid var(--jk-card-border); }
 .jk .demo-author { font-size: 12px; color: var(--jk-text-2); }
 .jk .demo-result-link { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 13px; font-weight: 600; color: var(--jk-accent-soft-text); flex-shrink: 0; }
-.jk .demo-footnote { font-size: 12px; color: var(--jk-text-2); margin-top: 24px; }
-.jk .platform-contact-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px; align-items: stretch; }
-.jk .contact-paths { display: grid; gap: 16px; }
-.jk .contact-path { display: flex; justify-content: space-between; gap: 20px; padding: 26px; border: 1px solid var(--jk-card-border); border-radius: 14px; background: var(--jk-card); }
-.jk .contact-path h3 { font-weight: 700; font-size: 20px; }
-.jk .contact-path p { color: var(--jk-text-2); font-size: 14px; margin: 8px 0 16px; }
-.jk .contact-path span { display: inline-flex; align-items: center; gap: 8px; color: var(--jk-accent-soft-text); font-size: 13px; font-weight: 600; }
-.consult-card-compact { border: 1px solid var(--jk-card-border); border-radius: 14px; padding: 24px; background: var(--jk-card); }
-.consult-card .consult-name { margin-bottom: 18px; }
-.consult-card .consult-contact { align-items: center; }
-.consult-card .consult-qr { width: 176px; height: 176px; border-radius: 8px; padding: 8px; }
-.consult-card-compact .consult-contact { flex-direction: column; align-items: flex-start; }
-.consult-card-compact .consult-name { margin-bottom: 14px; }
+.jk .demo-footnote { font-size: 12px; color: var(--jk-text-2); margin-top: 16px; }
+/* 联系区：左右的缝和左边两张卡之间的缝一样宽（都是 --jk-gap），三张卡拼成一块整齐的网格 */
+.jk .platform-contact-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--jk-gap); align-items: stretch; }
+.jk .contact-paths { display: grid; gap: var(--jk-gap); }
+.jk .contact-path { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding: var(--jk-pad); border: 1px solid var(--jk-card-border); border-radius: 14px; background: var(--jk-card); }
+/* 左边的文字列撑满卡片高度，「整理项目需求 →」用 margin-top: auto 沉到底部，
+   右边微信卡比较高时，两张卡的链接也是贴底对齐的，中间不会留一大块空白 */
+.jk .contact-path > div { display: flex; flex-direction: column; align-items: flex-start; align-self: stretch; }
+.jk .contact-path h3 { font-weight: 700; font-size: 20px; line-height: 1.4; }
+/* 右上角箭头 22px，标题行高 28px（20 × 1.4）：下移 3px，箭头和标题文字的中线对齐 */
+.jk .contact-path > svg { flex-shrink: 0; margin-top: 3px; }
+.jk .contact-path p { color: var(--jk-text-2); font-size: 14px; margin: 6px 0 12px; }
+.jk .contact-path span { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; color: var(--jk-accent-soft-text); font-size: 13px; font-weight: 600; }
+.consult-card-compact { border: 1px solid var(--jk-card-border); border-radius: 14px; padding: var(--jk-pad); background: var(--jk-card); }
+.consult-card .consult-name { margin-bottom: 16px; line-height: 1.4; }
+/* 二维码和右边的文字顶部对齐（以前是垂直居中，文字比二维码短时上下都会空一截） */
+.consult-card .consult-contact { align-items: flex-start; }
+.consult-card .consult-qr { width: 152px; height: 152px; border-radius: 8px; padding: 6px; }
+.consult-card .consult-id { margin-top: 0; }
+/* 紧凑版也改成左边二维码、右边微信号和复制按钮：以前竖着排，卡片比左边两张入口卡加起来还高，
+   入口卡只能被硬拉高、底部空出一大块。手机上（≤480px）再改回竖排，见文件末尾 */
+.consult-card-compact .consult-contact { flex-direction: row; align-items: flex-start; }
+.consult-card-compact .consult-name { margin-bottom: 12px; }
+.consult-card-compact .consult-status { margin-top: 4px; }
+.consult-card-compact .consult-status:empty { min-height: 0; margin: 0; }
 .consult-compose { margin-top: 18px; border-top: 1px solid var(--jk-card-border); padding-top: 12px; }
 .consult-compose summary { cursor: pointer; font-size: 13px; color: var(--jk-text-2); min-height: 32px; }
 .consult-dialog-head h2 { overflow-wrap: anywhere; }
@@ -771,19 +813,22 @@
 .jk .footer-links { display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; color: var(--jk-text-2); }
 .jk .platform-footer .copyright { margin-top: 28px; }
 .jk .output-enlarge { display: inline-block; font-size: 12px; color: var(--jk-accent-soft-text); padding-top: 6px; }
-.jk .detail-provider { display: flex; gap: 18px; align-items: center; }
+.jk .detail-provider { display: flex; gap: 20px; align-items: center; }
 .jk .detail-provider h3 { font-size: 18px; font-weight: 700; }
-.jk .detail-provider p { color: var(--jk-text-2); margin-top: 4px; }
+.jk .detail-provider p { color: var(--jk-text-2); margin-top: 2px; }
 .jk .provider-monogram { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 16px; background: var(--jk-accent-soft-bg); color: var(--jk-accent-soft-text); font-size: 32px; font-weight: 700; flex-shrink: 0; }
-.jk .provider-page { padding-top: 28px; padding-bottom: 60px; }
-.jk .provider-profile { display: flex; gap: 24px; padding: 32px 0; }
-.jk .provider-profile h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
-.jk .provider-profile .demo-tags { margin: 16px 0; }
-.jk .provider-profile .btn-md { margin-top: 14px; }
-.jk .provider-page section { padding: 32px 0; }
-.jk .provider-page h2 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+.jk .provider-page { padding-top: 16px; padding-bottom: 48px; }
+/* 头像和右边文字块的间距与详情页「作品提供者」一致（20px），两处看起来是同一个组件 */
+.jk .provider-profile { display: flex; gap: 20px; align-items: flex-start; padding: 16px 0 24px; }
+.jk .provider-profile .kicker { line-height: 1.4; margin-bottom: 4px; }
+.jk .provider-profile h1 { font-size: 32px; font-weight: 800; line-height: 1.25; margin-bottom: 6px; }
+.jk .provider-profile .demo-tags { margin: 12px 0 0; }
+.jk .provider-profile .field-hint { margin: 8px 0 0; }
+.jk .provider-profile .btn-md { margin-top: 16px; }
+.jk .provider-page section { padding: 24px 0; }
+.jk .provider-page h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
 .jk .provider-scope { border-top: 1px solid var(--jk-card-border); }
-.jk .provider-scope p { color: var(--jk-text-2); margin-bottom: 16px; }
+.jk .provider-scope p { color: var(--jk-text-2); margin-bottom: 10px; }
 .jk .inline-link { color: var(--jk-accent-soft-text); display: inline-block; padding: 10px 0; font-size: 14px; }
 
 /* 两类资料整理流程：单列、分步、明确本地草稿和微信发送边界。 */
@@ -841,16 +886,15 @@
   .jk .platform-goals small { flex-basis: 100%; margin-left: 0; }
 }
 @media (max-width: 768px) {
-  .jk .platform-hero { padding-top: 40px; }
+  /* 手机上卡片内边距统一收到 20px：改这一个变量，所有大卡片一起变，彼此仍然对齐 */
+  .jk { --jk-pad: 20px; --jk-pad-sm: 18px; }
+  .jk .platform-hero { padding-top: 32px; }
   .jk .platform-hero-grid, .jk .participation-grid, .jk .demo-featured-grid, .jk .platform-contact-grid { grid-template-columns: minmax(0, 1fr); }
   .jk .proj-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .jk .platform-hero h1 { font-size: 42px; }
-  .jk .platform-goals { margin-top: 32px; gap: 14px 22px; }
-  .jk .platform-map { padding: 20px; }
+  .jk .platform-goals { margin-top: 28px; gap: 10px 22px; }
   .jk .platform-footer-row { align-items: flex-start; flex-direction: column; }
-  .jk .participation-card { padding: 24px; }
-  .consult-card-compact .consult-contact { flex-direction: row; }
-  .jk .provider-profile { flex-direction: column; }
+  .jk .provider-profile { flex-direction: column; gap: 16px; }
 }
 @media (max-width: 480px) {
   .jk .proj-grid { grid-template-columns: minmax(0, 1fr); }

@@ -7,7 +7,7 @@ export const goals = [
   { key: "manageable", title: "可管理", text: "内容、权限和维护责任有明确安排。" },
 ] as const
 
-// 不进「高曝光位置」的项目：首页精选、团队作品页（/providers/momorain）。
+// 不进「高曝光位置」的项目：首页精选、各服务方的作品页（/providers/<slug>）。
 // talk-to-fengge 克隆的是真人（B 站博主）的声音和性格，对外使用授权没确认之前，
 // 不放到这些更显眼的新位置（workspace 约定：对外曝光前先问）。
 // 它仍然在首页「更多作品」列表里——那是改版前就公开着的，维持现状。

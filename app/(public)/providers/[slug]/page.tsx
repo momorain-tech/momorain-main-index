@@ -1,17 +1,39 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { momorainProvider as provider } from "@/config/platform"
+import { notFound, permanentRedirect } from "next/navigation"
+import { getProvider, providerMonogram, providers } from "@/config/platform"
 import { highExposureExcludeSlugs } from "@/config/home"
 import { getHomeProjects } from "@/lib/projects"
 import { ProjectCard } from "@/components/projects/project-card"
 import { ConsultationTrigger } from "@/components/consultation/consultation-provider"
 import { siteConfig } from "@/config/site"
 
-export const metadata: Metadata = { title: "momorain 团队 · 服务与作品" }
+// 每个服务方一个页面：/providers/<slug>。
+// 服务方名单是写死在 config/platform.ts 里的，所以构建时就能全部预渲染；
+// 同目录下的 /providers/join 是静态路由，Next.js 会优先匹配它，不会被这里的 [slug] 抢走
+type Props = { params: Promise<{ slug: string }> }
+
 export const revalidate = 300
-export default async function ProviderPage() {
+// 名单之外的地址一律 404，不在运行时按需渲染
+export const dynamicParams = false
+export function generateStaticParams() {
+  // 旧地址 /providers/momorain 也要生成，否则 dynamicParams=false 会直接 404、走不到下面的跳转
+  return [...providers.map((p) => ({ slug: p.slug })), { slug: "momorain" }]
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const provider = getProvider((await params).slug)
+  return provider ? { title: `${provider.name} · 服务与作品` } : {}
+}
+
+export default async function ProviderPage({ params }: Props) {
+  const { slug } = await params
+  // 改版前所有作品都挂在 /providers/momorain 下，已经转发出去的旧链接带回作品列表
+  if (slug === "momorain") permanentRedirect("/#projects")
+  const provider = getProvider(slug)
+  if (!provider) notFound()
   const { all } = await getHomeProjects()
-  // 只列已确认归属团队的作品；敏感项目不进这个新的高曝光页（规则和首页精选共用一份）
+  // 只列已确认归属这个服务方的作品；敏感项目不进这个高曝光页（规则和首页精选共用一份）
   const projects = all.filter(
     (p) => provider.projectSlugs.includes(p.slug) && !highExposureExcludeSlugs.includes(p.slug),
   )
@@ -22,10 +44,10 @@ export default async function ProviderPage() {
       </Link>
       <header className="provider-profile">
         <span className="provider-monogram" aria-hidden="true">
-          m
+          {providerMonogram(provider)}
         </span>
         <div>
-          <span className="kicker">{provider.type} · 平台团队</span>
+          <span className="kicker">{provider.type} · 入驻服务方</span>
           <h1>{provider.name}</h1>
           <p>{provider.intro}</p>
           <div className="demo-tags">

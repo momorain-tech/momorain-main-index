@@ -3,7 +3,7 @@ import Link from "next/link"
 import type { Project } from "@/lib/projects"
 import { OUTPUT_KIND_LABELS, type CaseOutput } from "@/lib/project-content"
 import { projectConsultContext } from "@/lib/project-url"
-import { projectProvider } from "@/config/platform"
+import { projectProvider, providerMonogram } from "@/config/platform"
 import { goals as GOAL_DEFS } from "@/config/home"
 import { DemoToggle } from "@/components/demo-toggle"
 import { ConsultationCard } from "@/components/consultation/consultation-card"
@@ -111,7 +111,7 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
       )}
 
       {provider && <Section id="provider" title="作品提供者">
-        <div className="detail-provider"><span className="provider-monogram" aria-hidden="true">m</span><div><h3><Link href={`/providers/${provider.slug}`}>{provider.name} ↗</Link></h3><p>{provider.intro}</p><p className="detail-muted">{provider.availability} · 实际承担的工作见下方说明。</p></div></div>
+        <div className="detail-provider"><span className="provider-monogram" aria-hidden="true">{providerMonogram(provider)}</span><div><h3><Link href={`/providers/${provider.slug}`}>{provider.name} ↗</Link></h3><p>{provider.intro}</p><p className="detail-muted">{provider.availability} · 实际承担的工作见下方说明。</p></div></div>
       </Section>}
 
       {/* 5. 团队贡献 */}

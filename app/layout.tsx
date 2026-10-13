@@ -13,7 +13,7 @@ const fontSans = FontSans({
 
 export const metadata: Metadata = {
   title: {
-    // 「即刻体验 · momorain」：站名 + 母品牌署名（§1.1）
+    // 站名与页面统一，保留母品牌署名
     default: `${siteConfig.name} · ${siteConfig.brand}`,
     template: `%s | ${siteConfig.name} · ${siteConfig.brand}`,
   },

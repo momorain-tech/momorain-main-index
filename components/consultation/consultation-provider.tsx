@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { X } from "lucide-react"
 
-import { ConsultationCard, type ConsultContext } from "@/components/consultation/consultation-card"
+import { ConsultationCard, consultationTitle, type ConsultContext } from "@/components/consultation/consultation-card"
 
 // 全站共用一个咨询对话框，挂在 (public)/layout 上；
 // 导航、首屏、项目卡片、详情页的按钮都调 useConsultation() 拿到的 open(context)。
@@ -22,6 +22,7 @@ export function useConsultation() {
 
 export function ConsultationProvider({ children }: { children: React.ReactNode }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const originalOverflowRef = useRef<string | null>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const [context, setContext] = useState<ConsultContext | null>(null)
   // 每次打开都换一个 key，让卡片重新挂载：上一次填的需求、复制状态不会带到下一个项目
@@ -36,8 +37,16 @@ export function ConsultationProvider({ children }: { children: React.ReactNode }
   // context 渲染进 DOM 之后再 showModal，否则对话框里的内容还是上一次的
   useEffect(() => {
     const dialog = dialogRef.current
-    if (openCount > 0 && dialog && !dialog.open) dialog.showModal()
+    if (openCount > 0 && dialog && !dialog.open) {
+      originalOverflowRef.current = document.body.style.overflow
+      document.body.style.overflow = "hidden"
+      dialog.showModal()
+    }
   }, [openCount])
+
+  useEffect(() => () => {
+    if (originalOverflowRef.current !== null) document.body.style.overflow = originalOverflowRef.current
+  }, [])
 
   function close() {
     dialogRef.current?.close()
@@ -45,6 +54,10 @@ export function ConsultationProvider({ children }: { children: React.ReactNode }
 
   // close 事件：不管是点关闭按钮、点遮罩还是按 Escape，最后都会走到这里
   function handleClose() {
+    if (originalOverflowRef.current !== null) {
+      document.body.style.overflow = originalOverflowRef.current
+      originalOverflowRef.current = null
+    }
     // preventScroll：还焦点时不要把页面滚到按钮那里，保持用户原来的滚动位置
     returnFocusRef.current?.focus({ preventScroll: true })
   }
@@ -64,7 +77,7 @@ export function ConsultationProvider({ children }: { children: React.ReactNode }
       >
         <div className="consult-dialog-inner">
           <div className="consult-dialog-head">
-            <h2 id="consult-dialog-title">咨询定制</h2>
+            <h2 id="consult-dialog-title">{consultationTitle(context)}</h2>
             <button type="button" className="consult-close" aria-label="关闭" onClick={close}>
               <X size={20} />
             </button>

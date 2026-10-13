@@ -14,6 +14,12 @@ import { useEffect } from "react"
 // 这些链接打开后要落到新首页对应的位置，而不是停在页面顶部。
 // 用 replaceState 把地址栏也换成新锚点，用户再分享出去的就是新链接
 const LEGACY_HASHES: Record<string, string> = {
+  "#about": "#platform",
+  "#top": "#platform",
+  "#goals": "#platform",
+  "#featured": "#projects",
+  "#process": "#services",
+  "#faq": "#services",
   "#shelf": "#projects", // 神器货架 → 项目案例
   "#who": "#services", // 按身份挑 → 服务内容
   "#pain": "#services", // 痛点区 → 服务内容
@@ -31,7 +37,7 @@ export function HashScroll() {
     const scroll = () => {
       let hash = window.location.hash
       if (!hash) return
-      const mapped = LEGACY_HASHES[hash]
+      const mapped = pathname === "/" ? LEGACY_HASHES[hash] : undefined
       if (mapped) {
         hash = mapped
         // 第一个参数传原来的 history.state：Next 的路由器把自己的数据存在里面，传 null 会弄坏后退
@@ -39,7 +45,7 @@ export function HashScroll() {
       }
       // 尊重「减少动态效果」的系统设置：这类用户直接跳过去，不做平滑滚动
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      document.querySelector(hash)?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" })
+      document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" })
     }
     scroll()
     window.addEventListener("hashchange", scroll)

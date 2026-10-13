@@ -3,9 +3,9 @@ import Link from "next/link"
 import type { Project } from "@/lib/projects"
 import { OUTPUT_KIND_LABELS, type CaseOutput } from "@/lib/project-content"
 import { projectConsultContext } from "@/lib/project-url"
+import { projectProvider } from "@/config/platform"
 import { goals as GOAL_DEFS } from "@/config/home"
 import { DemoToggle } from "@/components/demo-toggle"
-import { ConsultationCard } from "@/components/consultation/consultation-card"
 import { ConsultationTrigger } from "@/components/consultation/consultation-provider"
 import { ProjectLabels } from "@/components/projects/project-labels"
 
@@ -17,6 +17,8 @@ import { ProjectLabels } from "@/components/projects/project-labels"
 // 所有内容都按纯文本渲染（React 默认会转义），案例内容里就算混进了 HTML 也不会执行
 export function ProjectDetail({ project, preview = false }: { project: Project; preview?: boolean }) {
   const c = project.caseContent
+  const provider = projectProvider(project.slug)
+  const demandHref = `/requests/new?project=${encodeURIComponent(project.slug)}`
   const consult = projectConsultContext(project, "detail")
   const canTry = project.maturity === "interactive" && project.demo
   const legacyTool = !project.maturity && project.demo
@@ -24,7 +26,7 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
   return (
     <div className="wrap detail">
       <Link href="/#projects" className="detail-back">
-        ← 返回项目案例
+        ← 返回 Demo展示
       </Link>
 
       {/* 1. 用途概述 */}
@@ -39,11 +41,11 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
           <div className="detail-actions">
             {canTry && (
               <a className="btn-primary btn-md" href={project.demo} target="_blank" rel="noreferrer">
-                立即体验 ↗
+                在线体验 ↗
               </a>
             )}
             <ConsultationTrigger className={canTry ? "btn-ghost btn-md" : "btn-primary btn-md"} context={consult}>
-              咨询定制
+              沟通类似需求
             </ConsultationTrigger>
             {legacyTool && (
               <a className="btn-ghost btn-md" href={project.demo} target="_blank" rel="noreferrer">
@@ -51,6 +53,7 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
               </a>
             )}
           </div>
+          {canTry && <p className="detail-note">{c?.limits?.join("；") || "实时执行的登录、费用和配置要求，请先在工具页面核对。"}</p>}
           {legacyTool && (
             <p className="detail-note">
               这个项目的案例资料还在整理中，使用条件以工具页内的说明为准。
@@ -61,7 +64,7 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
 
       {/* 2. 真实成果：放在最前面，成果承担主要的说服力（§4.4） */}
       {c?.outputs?.length ? (
-        <Section id="outputs" title="真实成果">
+        <Section id="outputs" title="成果预览">
           <div className="detail-outputs">
             {c.outputs.map((o, i) => (
               <OutputItem key={i} output={o} />
@@ -69,7 +72,7 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
           </div>
         </Section>
       ) : (
-        preview && <Pending title="真实成果" />
+        preview && <Pending title="成果预览" />
       )}
 
       <Section id="overview" title="用途概述">
@@ -105,6 +108,10 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
       ) : (
         preview && <Pending title="输入和过程" />
       )}
+
+      {provider && <Section id="provider" title="作品提供者">
+        <div className="detail-provider"><span className="provider-monogram" aria-hidden="true">m</span><div><h3><Link href={`/providers/${provider.slug}`}>{provider.name} ↗</Link></h3><p>{provider.intro}</p><p className="detail-muted">{provider.availability} · 实际承担的工作见下方说明。</p></div></div>
+      </Section>}
 
       {/* 5. 团队贡献 */}
       {c?.contribution ? (
@@ -169,13 +176,15 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
         </div>
       )}
 
-      {/* 9. 咨询与返回：子应用里的「咨询」入口会链到这里（/projects/[slug]#contact，§7.2） */}
-      <Section id="contact" title={`想做一个类似「${project.name}」的应用？`}>
-        <p className="detail-muted">加微信聊聊你的需求。复制的咨询内容里会带上这个项目的链接。</p>
-        <ConsultationCard context={consult} />
-        <p className="detail-back-bottom">
-          <Link href="/#projects">← 看看其他项目</Link>
-        </p>
+      {/* 合作入口区分需求方与服务方；不在这里重复整张联系卡。 */}
+      <Section id="contact" title="从这个作品，聊聊你的下一步">
+        <p className="detail-muted">需求整理会带入作品名称、链接和已确认的提供者，由平台人工协助对接。</p>
+        <div className="detail-actions">
+          <Link href={demandHref} className="btn-primary btn-md">我有类似需求 ↗</Link>
+          <ConsultationTrigger className="btn-ghost btn-md" context={consult}>直接微信沟通</ConsultationTrigger>
+        </div>
+        <p className="detail-back-bottom"><Link className="inline-link" href="/providers/join">我也想展示作品 →</Link></p>
+        <p className="detail-back-bottom"><Link href="/#projects">← 看看其他 Demo</Link></p>
       </Section>
     </div>
   )
@@ -229,13 +238,17 @@ function OutputItem({ output }: { output: CaseOutput }) {
     <figure className="output-item">
       {output.type === "image" && (
         // eslint-disable-next-line @next/next/no-img-element -- 成果图可能是站外 https 地址
-        <img src={output.url} alt={output.caption} loading="lazy" />
+        <a href={output.url} target="_blank" rel="noreferrer" aria-label={`放大查看：${output.caption}`}>
+          <img src={output.url} alt={output.caption} loading="lazy" />
+          <span className="output-enlarge">点击查看原图 ↗</span>
+        </a>
       )}
       {output.type === "video" && (
         <video src={output.url} poster={output.poster} controls preload="none" playsInline>
-          你的浏览器不能播放这个视频，<a href={output.url}>点这里下载</a>。
+          你的浏览器不能播放这个视频。
         </video>
       )}
+      {output.type === "video" && <a className="output-enlarge" href={output.url} target="_blank" rel="noreferrer">无法播放？直接打开视频 ↗</a>}
       {output.type === "file" && (
         <a className="output-file" href={output.url} target="_blank" rel="noreferrer">
           📎 查看文件

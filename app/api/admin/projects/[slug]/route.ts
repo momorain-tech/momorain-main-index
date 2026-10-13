@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache"
+import { revalidateProjectPages } from "@/lib/revalidate-project"
 import { NextResponse } from "next/server"
 
 import { requireAdmin } from "@/lib/auth"
@@ -46,8 +46,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: `项目 "${slug}" 不存在` }, { status: 404 })
   }
 
-  revalidatePath("/")
-  revalidatePath(`/projects/${slug}`)
+  revalidateProjectPages(slug)
 
   return NextResponse.json({ slug })
 }
@@ -86,8 +85,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   // 首页和详情页一起刷新：只刷首页的话，下架的详情页还能从 ISR 缓存里打开（§9.3 第 6 条）
-  revalidatePath("/")
-  revalidatePath(`/projects/${slug}`)
+  revalidateProjectPages(slug)
 
   return NextResponse.json({ slug, published: result.project.published })
 }
@@ -107,8 +105,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: `项目 "${slug}" 不存在` }, { status: 404 })
   }
 
-  revalidatePath("/")
-  revalidatePath(`/projects/${slug}`)
+  revalidateProjectPages(slug)
 
   return NextResponse.json({ slug })
 }

@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache"
+import { revalidateProjectPages } from "@/lib/revalidate-project"
 import { NextResponse } from "next/server"
 
 import { requireAdmin } from "@/lib/auth"
@@ -48,8 +48,7 @@ export async function POST(request: Request) {
   }
 
   // 数据变了，让 ISR 页面立即重新生成，而不是等 5 分钟的 revalidate 窗口
-  revalidatePath("/")
-  revalidatePath(`/projects/${slug}`)
+  revalidateProjectPages(slug)
 
   return NextResponse.json({ slug }, { status: 201 })
 }

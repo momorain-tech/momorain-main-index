@@ -21,3 +21,7 @@ tsconfig.tsbuildinfo
 *.pem
 
 CLAUDE.md
+# 给 Codex 的本地说明，和 CLAUDE.md 同内容，含服务器地址，不入库
+AGENTS.md
+# 第一版改版方案，按约定只在本地保留
+docs/MAIN_INDEX_EVOLUTION_V1.md

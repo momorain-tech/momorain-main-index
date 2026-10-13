@@ -1,3 +1,4 @@
+import { projectProvider } from "@/config/platform"
 import { siteConfig } from "@/config/site"
 import type { ConsultContext } from "@/components/consultation/consultation-card"
 
@@ -11,5 +12,8 @@ export function projectConsultContext(
   p: { slug: string; name: string },
   source: string
 ): ConsultContext {
-  return { source, project: { slug: p.slug, name: p.name, url: projectUrl(p.slug) } }
+  const provider = projectProvider(p.slug)
+  return { source, intent: "demand", project: { slug: p.slug, name: p.name, url: projectUrl(p.slug) },
+    ...(provider ? { provider: { name: provider.name, url: `${siteConfig.url}/providers/${provider.slug}` } } : {}),
+  }
 }

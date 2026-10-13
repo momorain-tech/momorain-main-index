@@ -9,7 +9,7 @@ const filename = path.resolve(__dirname, '../lib/intake-validation.ts')
 const compiled = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText
 const loaded = new Module(filename, module)
 loaded._compile(compiled, filename)
-const { validateFields, validateContact, isDraft } = loaded.exports
+const { validateFields, validateContact, isDraft, isFieldVisible } = loaded.exports
 
 test('缺少必填、空白文本和多选空数组均阻止前进；选填可空', () => {
   const fields = [{ key: 'name', label: '称呼', required: true }, { key: 'scope', label: '方向', type: 'multi', required: true }, { key: 'optional', label: '补充' }]
@@ -43,4 +43,12 @@ test('异常草稿的字段类型不应被空值或选项校验绕过', () => {
   const fields = [{ key: 'name', label: '名称', required: true }, { key: 'scope', label: '方向', type: 'multi', options: ['开发'] }]
   assert.ok(validateFields(fields, { name: ['测试'], scope: '开发' }).name)
   assert.ok(validateFields(fields, { name: '测试', scope: '开发' }).scope)
+})
+test('条件字段只在条件满足时显示和校验：改选别的行业后，「其他行业说明」不再生效', () => {
+  const other = { key: 'industryOther', label: '其他行业说明', required: true, showWhen: { key: 'industry', value: '其他' } }
+  assert.equal(isFieldVisible(other, { industry: '其他' }), true)
+  assert.equal(isFieldVisible(other, { industry: '教育培训', industryOther: '残留的旧说明' }), false)
+  // 藏起来时即使必填也不报错；显示时照常校验
+  assert.deepEqual(validateFields([other], { industry: '教育培训' }), {})
+  assert.ok(validateFields([other], { industry: '其他' }).industryOther)
 })

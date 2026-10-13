@@ -11,9 +11,16 @@ import { ModeToggle } from "@/components/mode-toggle"
 import { UserNav } from "@/components/user-nav"
 import { ConsultationTrigger } from "@/components/consultation/consultation-provider"
 
-// 第二版保留四项主导航，其他说明收进首页的折叠区。
-// 复用原账号和明暗切换；小屏菜单支持 Escape，跨页链接统一回到首页锚点。
-// 旧锚点兼容由 HashScroll 负责，只在首页执行映射。
+// 设计稿导航，在原稿上补的几样东西：
+// 1. 右侧登录/用户入口（UserNav）——按钮用 shadcn 令牌类，在 .jk-skin 容器里自动换成新调色板
+// 2. 明暗切换按钮（设计稿只有深色，浅色为后补配色）
+// 3. ≤768px 时导航链接收进汉堡菜单（设计稿是直接 display:none，窄窗口下导航会整个消失）
+// 4. 右侧主操作「联系平台」打开全站共用的咨询对话框。保持 4 个字：
+//    360px 宽时导航栏已经没有余量，再长就会把昵称挤没（见 CLAUDE.md 导航栏窄屏一节）
+//
+// 链接是第二版的四项主导航，和页脚共用 config/platform.ts 的同一份数据。
+// 链接一律写成 /#xxx：从子页面点过来先回首页再滚到区块，在首页点则原地平滑滚动——
+// 滚动和旧锚点兼容都由 (public)/layout 里的 HashScroll 统一处理
 const NAV_LINKS = platformNavigation
 
 export function JikeNav() {

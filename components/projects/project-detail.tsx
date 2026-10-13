@@ -6,6 +6,7 @@ import { projectConsultContext } from "@/lib/project-url"
 import { projectProvider } from "@/config/platform"
 import { goals as GOAL_DEFS } from "@/config/home"
 import { DemoToggle } from "@/components/demo-toggle"
+import { ConsultationCard } from "@/components/consultation/consultation-card"
 import { ConsultationTrigger } from "@/components/consultation/consultation-provider"
 import { ProjectLabels } from "@/components/projects/project-labels"
 
@@ -176,13 +177,17 @@ export function ProjectDetail({ project, preview = false }: { project: Project; 
         </div>
       )}
 
-      {/* 合作入口区分需求方与服务方；不在这里重复整张联系卡。 */}
+      {/* 9. 合作入口：区分需求方（带着这个作品去整理需求）和服务方（我也想展示作品）。
+          子应用的「咨询」按钮会跳到这里（/projects/xxx#contact），所以这里必须直接摆出微信号：
+          弹窗要等 JS 加载，微信内置浏览器里 JS 慢或失败时，这张 compact 卡片（服务端渲染）是兜底 */}
       <Section id="contact" title="从这个作品，聊聊你的下一步">
         <p className="detail-muted">需求整理会带入作品名称、链接和已确认的提供者，由平台人工协助对接。</p>
         <div className="detail-actions">
-          <Link href={demandHref} className="btn-primary btn-md">我有类似需求 ↗</Link>
-          <ConsultationTrigger className="btn-ghost btn-md" context={consult}>直接微信沟通</ConsultationTrigger>
+          <Link href={demandHref} className="btn-primary btn-md">
+            我有类似需求 ↗
+          </Link>
         </div>
+        <ConsultationCard context={consult} compact />
         <p className="detail-back-bottom"><Link className="inline-link" href="/providers/join">我也想展示作品 →</Link></p>
         <p className="detail-back-bottom"><Link href="/#projects">← 看看其他 Demo</Link></p>
       </Section>

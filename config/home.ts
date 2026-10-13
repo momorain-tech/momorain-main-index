@@ -7,7 +7,12 @@ export const goals = [
   { key: "manageable", title: "可管理", text: "内容、权限和维护责任有明确安排。" },
 ] as const
 
-export const heroExcludeSlugs = ["talk-to-fengge"]
+// 不进「高曝光位置」的项目：首页精选、团队作品页（/providers/momorain）。
+// talk-to-fengge 克隆的是真人（B 站博主）的声音和性格，对外使用授权没确认之前，
+// 不放到这些更显眼的新位置（workspace 约定：对外曝光前先问）。
+// 它仍然在首页「更多作品」列表里——那是改版前就公开着的，维持现状。
+// 以后再有类似的敏感项目，加到这一个数组里，两处会一起生效
+export const highExposureExcludeSlugs = ["talk-to-fengge"]
 
 export const faqs = [
   { q: "平台现在怎样对接需求和服务方？", a: "当前由平台人工协助。你可以整理需求或作品资料，通过微信发送；平台收到后沟通方向与相关能力。暂不提供自动匹配，不保证获得订单或达成合作。" },

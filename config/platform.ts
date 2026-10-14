@@ -5,22 +5,29 @@ export const platformNavigation = [
   { href: "/#projects", label: "Demo展示" },
   { href: "/#contact", label: "联系方式" },
 ]
+// 首页「服务内容」的两张入口卡（第三版：每张只有标题、一段说明、一个按钮）。
+//
+// 需求方的说明是用户第三版建议里给定的原文。
+// 服务方原文是「服务方来源于各大AI厂商在职或离职员工……」，但目前没有核实过的人员资料
+// 能证明这一点（下面 providers 里的四个展示身份也证明不了），所以先用去掉人群来源的中性版本，
+// 服务方向和原文一致（docs/MAIN_INDEX_V3_DEVELOPMENT.md §3.3）。
+// 业务负责人提供真实人员资料、确认可公开后，再换回原文。
 export const participationPaths = [
   {
     role: "需求方",
     title: "我有 AI 需求",
-    description: "把业务里最麻烦的一步说清楚，一起梳理实现方向与合作范围。",
-    action: "整理项目需求",
+    description:
+      "针对亟待用 AI 进行业务转型升级的企业，提供定制化服务，如 AI 客销、AI 财务、各种工作流、知识库等。",
+    action: "提交需求",
     href: "/requests/new",
-    steps: ["梳理需求", "沟通方案与服务方", "确认合作意向"],
   },
   {
     role: "服务方",
-    title: "我能提供 AI 服务",
-    description: "用真实作品说明你的能力，让有相关需求的人看懂你能交付什么。",
-    action: "整理服务资料",
+    title: "我有 AI 服务",
+    description:
+      "面向提供 AI 服务的个人和团队，服务方向包括 AI 业务咨询、AI 能力培训、定制化 Agent 及各类 AI 工具。",
+    action: "提交服务资料",
     href: "/providers/join",
-    steps: ["整理作品与资料", "平台检查与对接", "确认合作意向"],
   },
 ]
 // 作品提供者。为了宣传，对外把作品分在几个不同的服务方名下展示（用户 2026-10-13 拍板），

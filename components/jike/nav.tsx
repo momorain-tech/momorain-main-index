@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Menu, X } from "lucide-react"
 
 import { siteConfig } from "@/config/site"
+import { BrandMark } from "@/components/jike/brand-mark"
 import { platformNavigation } from "@/config/platform"
 
 import { ModeToggle } from "@/components/mode-toggle"
@@ -39,7 +40,7 @@ export function JikeNav() {
     <nav>
       <div className="wrap nav-inner">
         <Link className="logo" href="/">
-          <span className="logo-mark" aria-hidden="true">↗</span>{siteConfig.name}
+          <BrandMark />{siteConfig.name}
         </Link>
         <div className="nav-links">
           {NAV_LINKS.map((l) => (

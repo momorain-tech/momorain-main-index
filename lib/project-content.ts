@@ -55,11 +55,18 @@ export type CaseOutput = {
   poster?: string // 视频封面
 }
 
+// 封面的性质（第三版）：screenshot = 真实运行截图 / 成片帧；illustration = 功能示意图（说明图，不是运行结果）。
+// 示意图封面可以出现在普通作品列表里，但卡片上必须标「功能示意」，也不能拿来当精选（§3.4、§8.1）。
+// 老数据没有这个字段 = 按截图对待（迁移 004 之前录入的封面都是手工挑的真实图）
+export const COVER_KINDS = ["screenshot", "illustration"] as const
+export type CoverKind = (typeof COVER_KINDS)[number]
+
 export type ProjectCover = {
   url: string
   alt: string
   width?: number
   height?: number
+  kind?: CoverKind
 }
 
 // 四个目标在这个项目上分别做到了什么（§5.2 第 6 项）。
@@ -153,6 +160,10 @@ export function validateCover(v: unknown): Result<ProjectCover | undefined> {
     return { ok: false, error: "封面必须填替代文本（alt，200 字内），读屏用户靠它知道图里是什么" }
   }
   const cover: ProjectCover = { url, alt }
+  if (v.kind !== undefined && v.kind !== null && v.kind !== "") {
+    if (!COVER_KINDS.includes(v.kind as CoverKind)) return { ok: false, error: "封面类型只能是真实截图或功能示意图" }
+    cover.kind = v.kind as CoverKind
+  }
   for (const k of ["width", "height"] as const) {
     const n = v[k]
     if (n === undefined || n === null || n === "") continue
@@ -326,6 +337,7 @@ export function checkPublish(p: PublishFields): string[] {
   // 精选：公开输入样例、完整成果、交付说明
   if (p.featured) {
     if (!p.cover) missing.push("封面（精选项目必填）")
+    else if (p.cover.kind === "illustration") missing.push("精选需要真实截图封面（功能示意图不行）")
     if (!c?.input) missing.push("输入样例说明（精选项目必填）")
     if (!c?.customization?.length) missing.push("可调整项（精选项目必填）")
   }

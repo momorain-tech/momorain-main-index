@@ -7,7 +7,8 @@ import { ProjectLabels } from "@/components/projects/project-labels"
 // 作品卡片（第二版）。和第一版的区别：
 // - 只留一个主动作「查看成果 / 了解作品」进详情页：卡片上不再并排放「立即体验 / 打开工具页 / 咨询」，
 //   让访客先看到成果和使用条件，再在详情页决定体验还是联系（第二版需求文档的要求）
-// - 封面优先用后台填的 cover，没有就借第一张图片成果；都没有就不显示封面，不用图标或示意图凑数
+// - 封面优先用后台填的 cover，没有就借第一张图片成果；都没有就不显示封面。
+//   第三版起允许「功能示意图」当过渡封面（cover.kind = "illustration"），但必须带「功能示意」角标
 // - source="featured" 是首页精选的大卡片样式，其余位置是普通卡片
 export function ProjectCard({ project, source }: { project: Project; source: string }) {
   const href = `/projects/${project.slug}`
@@ -27,6 +28,11 @@ export function ProjectCard({ project, source }: { project: Project; source: str
               图片还没加载时位置就已经占好了；object-fit: cover 负责把不同比例的图裁进去 */}
           {/* eslint-disable-next-line @next/next/no-img-element -- 封面可能是站外 https 地址，next/image 需要逐个配置域名白名单 */}
           <img src={cover.url} alt="" loading="lazy" />
+          {/* 功能示意图封面：右上角固定标「功能示意」。图里本来也印着「非运行截图」，
+              但卡片裁切后不一定看得到，这里再说一遍（第三版 §9.1） */}
+          {"kind" in cover && cover.kind === "illustration" && (
+            <span className="demo-cover-kind">功能示意</span>
+          )}
           {project.maturity === "interactive" && project.demo ? (
             <span className="demo-cover-status">可在线体验</span>
           ) : project.caseContent?.outputs?.length ? (

@@ -56,6 +56,9 @@ export default async function AdminLayout({
         <Link href="/admin/projects" className="text-muted-foreground hover:text-foreground">
           项目管理
         </Link>
+        <Link href="/admin/intake" className="text-muted-foreground hover:text-foreground">
+          资料接收
+        </Link>
       </nav>
 
       {children}

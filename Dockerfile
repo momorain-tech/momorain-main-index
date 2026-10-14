@@ -98,6 +98,12 @@ RUN apk add --no-cache tzdata
 # 框架层 RCE（CVE-2025-66478）直接变成了服务器 root 权限。
 RUN addgroup -g 1001 nodejs && adduser -D -u 1001 -G nodejs nextjs
 
+# 用户上传的作品素材（第三版资料接收）。在 Dokploy 的 Advanced → Volumes 里把一个
+# **命名卷**挂到 /data/intake，并设环境变量 INTAKE_UPLOAD_DIR=/data/intake 才会开放上传。
+# 这里先建好目录并交给 nextjs 用户：Docker 第一次把空的命名卷挂上来时，会沿用镜像里
+# 这个目录的属主，应用（非 root）才写得进去。没挂卷 = 上传功能关闭，不会写进容器临时层
+RUN mkdir -p /data/intake && chown nextjs:nodejs /data/intake
+
 # standalone 产物已经包含了精简后的 node_modules 和 server.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

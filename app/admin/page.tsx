@@ -17,6 +17,11 @@ export default function AdminPage() {
       title: "项目管理",
       desc: "项目内容、发布状态、预览，含内部 Wiki",
     },
+    {
+      href: "/admin/intake",
+      title: "资料接收",
+      desc: "首页提交的需求和服务申请：跟进、指派、AI 初评、附件与 Demo 部署工单",
+    },
   ]
 
   return (

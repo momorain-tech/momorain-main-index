@@ -169,10 +169,6 @@
     "Microsoft YaHei", sans-serif;
   background-color: var(--jk-bg);
   color: var(--jk-text);
-  background-image:
-    radial-gradient(640px 420px at 18% -5%, var(--jk-glow-1), transparent 60%),
-    radial-gradient(760px 520px at 88% 8%, var(--jk-glow-2), transparent 60%);
-  background-repeat: no-repeat;
   overflow-x: hidden;
   line-height: 1.6;
 }
@@ -202,15 +198,16 @@
 }
 .jk .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; white-space: nowrap; flex-shrink: 0; }
 .jk .logo-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--jk-grad);
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  font-size: 18px;
-  box-shadow: 0 4px 16px var(--jk-btn-shadow);
+  flex-shrink: 0;
+  border-radius: 8px;
 }
+.jk .logo-mark img { width: 100%; height: 100%; object-fit: contain; }
+/* 图形是深色的，深色主题下垫一块小白底保证看得见（还没有官方反白版本，不自己反色） */
+.dark .jk .logo-mark { background: #fff; padding: 3px; }
 .jk .nav-links { display: flex; gap: 28px; font-size: 14.5px; color: var(--jk-text-2); }
 .jk .nav-links a { transition: color 0.2s; }
 .jk .nav-links a:hover { color: var(--jk-text); }
@@ -219,7 +216,7 @@
   align-items: center;
   white-space: nowrap;
   flex-shrink: 0;
-  background: var(--jk-grad);
+  background: var(--jk-accent);
   color: #fff;
   font-weight: 600;
   font-size: 14px;
@@ -227,13 +224,9 @@
   border-radius: 999px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 18px var(--jk-btn-shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: opacity 0.2s;
 }
-.jk .nav-cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 26px var(--jk-btn-shadow-hover);
-}
+.jk .nav-cta:hover { opacity: 0.88; }
 
 /* ── 汉堡菜单（≤768px 时导航链接收进这里，替代设计稿的 display:none） ── */
 .jk .nav-burger {
@@ -280,21 +273,17 @@
 .jk .btn-primary {
   display: inline-flex;
   align-items: center;
-  background: var(--jk-grad);
+  background: var(--jk-accent);
   color: #fff;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 17px;
   padding: 15px 38px;
   border-radius: 999px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 10px 36px var(--jk-btn-shadow-hover);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: background 0.2s, opacity 0.2s;
 }
-.jk .btn-primary:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 14px 46px var(--jk-btn-shadow-hover);
-}
+.jk .btn-primary:hover { opacity: 0.88; }
 .jk .btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -600,8 +589,8 @@
   cursor: pointer;
 }
 .consult-btn:hover { border-color: var(--jk-cyan-soft-border); background: var(--jk-cyan-soft-bg); }
-.consult-btn-primary { background: var(--jk-grad); color: #fff; border-color: transparent; }
-.consult-btn-primary:hover { background: var(--jk-grad); box-shadow: 0 4px 16px var(--jk-btn-shadow); }
+.consult-btn-primary { background: var(--jk-accent); color: #fff; border-color: transparent; }
+.consult-btn-primary:hover { background: var(--jk-accent); opacity: 0.88; }
 .consult-status { min-height: 1.5em; margin-top: 8px; font-size: 13.5px; color: var(--jk-green-text); }
 .consult-manual {
   white-space: pre-wrap;
@@ -689,7 +678,7 @@
 @media (max-width: 400px) {
   .jk .nav-inner { gap: 8px; }
   .jk .logo { font-size: 16px; gap: 7px; }
-  .jk .logo-mark { width: 30px; height: 30px; font-size: 16px; border-radius: 9px; }
+  .jk .logo-mark { width: 28px; height: 28px; }
   .jk .nav-inner > .flex { gap: 6px; }
   .jk .nav-cta { padding: 8px 12px; font-size: 13.5px; }
 }
@@ -700,49 +689,23 @@
 .jk :is(header, section, details)[id] { scroll-margin-top: 84px; }
 .jk a:focus-visible, .jk button:focus-visible, .consult-dialog button:focus-visible,
 .jk summary:focus-visible { outline: 2px solid var(--jk-accent); outline-offset: 4px; }
-.jk .platform-hero { padding: 56px 0 0; }
-/* 左右两栏等高（stretch）：右边流程卡的上沿对齐左边第一行小字，下沿对齐左边最后一行说明，
-   两栏看起来是一个整体，而不是两块各自居中、上下边都差几像素的东西 */
-.jk .platform-hero-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .85fr); gap: 56px; align-items: stretch; }
-/* 用 flex（块级）而不是 inline-flex：行内元素会被父元素 1.6 倍的行高撑出一截空白，
-   小字就比右边卡片的上沿低几个像素 */
-.jk .platform-eyebrow { display: flex; width: fit-content; align-items: center; gap: 9px; color: var(--jk-accent-soft-text); font-size: 13px; font-weight: 600; line-height: 1; }
-.jk .platform-eyebrow > span { width: 7px; height: 7px; border-radius: 50%; background: var(--jk-accent); }
-.jk .platform-hero h1 { font-size: clamp(36px, 4.3vw, 60px); line-height: 1.2; font-weight: 800; margin: 16px 0; letter-spacing: -1.6px; }
-.jk .platform-lead { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-.jk .platform-description { color: var(--jk-text-2); max-width: 560px; line-height: 1.8; }
-.jk .platform-hero .hero-cta { justify-content: flex-start; margin: 24px 0 0; gap: 12px; }
-.jk .platform-hero :is(.btn-primary, .btn-ghost) { padding: 12px 22px; font-size: 15px; gap: 8px; }
-.jk .platform-note { font-size: 12.5px; color: var(--jk-text-2); margin-top: 12px; line-height: 1.4; }
-/* 流程卡竖排：三行平分卡片高度（flex: 1），卡片被拉高时多出的空间均匀分给每一行 */
-.jk .platform-map { display: flex; flex-direction: column; border: 1px solid var(--jk-card-border); border-radius: var(--jk-radius); background: var(--jk-card); padding: 4px var(--jk-pad); }
-.jk .platform-map-top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--jk-text-2); padding: 14px 0; }
-.jk .platform-map-row { flex: 1; display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--jk-card-border); }
-.jk .platform-map-row > svg { margin-left: auto; flex-shrink: 0; color: var(--jk-text-2); }
-.jk .platform-map-row b { font-size: 17px; }
-.jk .platform-map-row p { font-size: 12.5px; color: var(--jk-text-2); margin-top: 2px; }
-.jk .map-number { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--jk-accent-soft-bg); color: var(--jk-accent-soft-text); font-size: 12px; font-weight: 700; flex-shrink: 0; }
-/* 顶栏图标、每行箭头、底栏握手图标都贴着同一条右/左边线：它们都在卡片的 padding 之内，不再单独缩进 */
-.jk .platform-map-foot { display: flex; gap: 8px; align-items: center; color: var(--jk-text-2); font-size: 12.5px; padding: 14px 0; border-top: 1px solid var(--jk-card-border); }
-.jk .platform-goals { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: 40px; padding: 16px 0; border-block: 1px solid var(--jk-card-border); }
-.jk .platform-goals > span { display: inline-flex; gap: 7px; align-items: center; font-size: 14px; font-weight: 600; }
-.jk .platform-goals svg { color: var(--jk-accent-soft-text); }
-.jk .platform-goals small { color: var(--jk-text-2); margin-left: auto; font-size: 12.5px; }
+/* 第三版首屏：只有标题、一段介绍、三个锚点链接。不放插画、流程卡、口号条（§3.2） */
+.jk .platform-hero { padding: 72px 0 8px; }
+.jk .platform-hero h1 { font-size: clamp(34px, 4.6vw, 56px); line-height: 1.2; font-weight: 700; margin: 0 0 20px; letter-spacing: -1px; }
+.jk .platform-description { color: var(--jk-text-2); max-width: 680px; font-size: 18px; line-height: 1.75; }
+.jk .platform-anchors { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 28px; }
+.jk .platform-anchors a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 15px; font-weight: 600; color: var(--jk-accent-soft-text); }
+.jk .platform-anchors a:hover { color: var(--jk-text); }
 .jk .sec-head { text-align: left; margin-bottom: 24px; }
 .jk .sec-head h2 { margin-bottom: 8px; line-height: 1.3; }
 .jk .sec-head p { margin: 0; max-width: 700px; }
-.jk .sec-head .kicker { color: var(--jk-accent-soft-text); font-size: 11px; letter-spacing: 2px; margin-bottom: 8px; }
-/* subgrid：两张卡片的 5 行（序号、标题、说明、步骤、按钮）共用外层网格的行，
-   一张卡的说明折成两行时，另一张卡的步骤和按钮也跟着下移，同类内容始终在同一水平线上。
+/* subgrid：两张卡片的 3 行（标题、说明、按钮）共用外层网格的行，
+   一张卡的说明折成三行时，另一张卡的按钮也跟着下移，两个按钮始终在同一水平线上。
    卡片内部行距由各元素的 margin/padding 控制，所以卡片自己的 row-gap 设为 0 */
-.jk .participation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); gap: var(--jk-gap); }
-.jk .participation-card { display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 0; justify-items: start; align-content: start; border: 1px solid var(--jk-card-border); background: var(--jk-card); border-radius: var(--jk-radius); padding: var(--jk-pad); }
-.jk .path-index { font-size: 12px; color: var(--jk-accent-soft-text); font-weight: 700; line-height: 1.4; }
-.jk .participation-card h3 { font-size: 24px; font-weight: 700; margin: 8px 0 6px; line-height: 1.35; }
-.jk .participation-card > p { color: var(--jk-text-2); font-size: 15px; }
-.jk .participation-card ol { display: flex; flex-wrap: wrap; gap: 8px 16px; list-style: none; padding: 12px 0 20px; }
-.jk .participation-card li { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--jk-text-2); }
-.jk .participation-card li span { font-weight: 700; color: var(--jk-accent-soft-text); }
+.jk .participation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); gap: var(--jk-gap); }
+.jk .participation-card { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; justify-items: start; align-content: start; border: 1px solid var(--jk-card-border); background: var(--jk-card); border-radius: var(--jk-radius); padding: var(--jk-pad); }
+.jk .participation-card h3 { font-size: 22px; font-weight: 700; margin: 0 0 8px; line-height: 1.35; }
+.jk .participation-card > p { color: var(--jk-text-2); font-size: 15px; line-height: 1.65; margin-bottom: 20px; }
 .jk .participation-card > .btn-md { align-self: end; }
 .jk .btn-md { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
 /* 折叠面板的左右内边距也用 --jk-pad：展开前后，里面的字和上面两张卡片里的字左对齐 */
@@ -775,18 +738,9 @@
 .jk .demo-author { font-size: 12px; color: var(--jk-text-2); }
 .jk .demo-result-link { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 13px; font-weight: 600; color: var(--jk-accent-soft-text); flex-shrink: 0; }
 .jk .demo-footnote { font-size: 12px; color: var(--jk-text-2); margin-top: 16px; }
-/* 联系区：左右的缝和左边两张卡之间的缝一样宽（都是 --jk-gap），三张卡拼成一块整齐的网格 */
-.jk .platform-contact-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--jk-gap); align-items: stretch; }
-.jk .contact-paths { display: grid; gap: var(--jk-gap); }
-.jk .contact-path { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding: var(--jk-pad); border: 1px solid var(--jk-card-border); border-radius: 14px; background: var(--jk-card); }
-/* 左边的文字列撑满卡片高度，「整理项目需求 →」用 margin-top: auto 沉到底部，
-   右边微信卡比较高时，两张卡的链接也是贴底对齐的，中间不会留一大块空白 */
-.jk .contact-path > div { display: flex; flex-direction: column; align-items: flex-start; align-self: stretch; }
-.jk .contact-path h3 { font-weight: 700; font-size: 20px; line-height: 1.4; }
-/* 右上角箭头 22px，标题行高 28px（20 × 1.4）：下移 3px，箭头和标题文字的中线对齐 */
-.jk .contact-path > svg { flex-shrink: 0; margin-top: 3px; }
-.jk .contact-path p { color: var(--jk-text-2); font-size: 14px; margin: 6px 0 12px; }
-.jk .contact-path span { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; color: var(--jk-accent-soft-text); font-size: 13px; font-weight: 600; }
+/* 联系区（第三版）：只有微信、邮箱两张卡，等宽两列；邮箱没配置时只剩微信一张，限宽不拉满 */
+.jk .platform-contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--jk-gap); align-items: stretch; }
+.jk .platform-contact-grid.single { grid-template-columns: minmax(0, 1fr); max-width: 600px; }
 .consult-card-compact { border: 1px solid var(--jk-card-border); border-radius: 14px; padding: var(--jk-pad); background: var(--jk-card); }
 .consult-card .consult-name { margin-bottom: 16px; line-height: 1.4; }
 /* 二维码和右边的文字顶部对齐（以前是垂直居中，文字比二维码短时上下都会空一截） */
@@ -881,27 +835,22 @@
 .jk .next-explanation h3 { font-weight: 700; color: var(--jk-text); margin-bottom: 8px; }
 .jk .next-explanation a { display: inline-block; padding: 16px 0; color: var(--jk-accent-soft-text); }
 @media (max-width: 1024px) {
-  .jk .platform-hero-grid { gap: 32px; }
   .jk .nav-links { gap: 16px; }
-  .jk .platform-goals small { flex-basis: 100%; margin-left: 0; }
 }
 @media (max-width: 768px) {
   /* 手机上卡片内边距统一收到 20px：改这一个变量，所有大卡片一起变，彼此仍然对齐 */
   .jk { --jk-pad: 20px; --jk-pad-sm: 18px; }
-  .jk .platform-hero { padding-top: 32px; }
-  .jk .platform-hero-grid, .jk .participation-grid, .jk .demo-featured-grid, .jk .platform-contact-grid { grid-template-columns: minmax(0, 1fr); }
+  .jk .platform-hero { padding-top: 40px; }
+  .jk .platform-description { font-size: 16px; }
+  .jk .participation-grid, .jk .demo-featured-grid, .jk .platform-contact-grid { grid-template-columns: minmax(0, 1fr); }
   .jk .proj-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .jk .platform-hero h1 { font-size: 42px; }
-  .jk .platform-goals { margin-top: 28px; gap: 10px 22px; }
+  .jk .platform-hero h1 { font-size: 34px; }
   .jk .platform-footer-row { align-items: flex-start; flex-direction: column; }
   .jk .provider-profile { flex-direction: column; gap: 16px; }
 }
 @media (max-width: 480px) {
   .jk .proj-grid { grid-template-columns: minmax(0, 1fr); }
-  .jk .platform-hero .hero-cta { gap: 10px; }
-  .jk .platform-hero :is(.btn-primary, .btn-ghost) { padding: 12px 16px; font-size: 14px; }
-  .jk .platform-hero h1 { font-size: 38px; }
-  .jk .platform-lead { font-size: 17px; }
+  .jk .platform-hero h1 { font-size: 30px; }
   .consult-card-compact .consult-contact { flex-direction: column; }
   .jk .intake-progress { gap: 8px; }
   .jk .intake-progress li b { font-size: 10px; }
@@ -909,4 +858,64 @@
   .jk .intake-controls { gap: 8px; }
   .jk .intake-controls .btn-md { padding: 10px 16px; font-size: 13px; }
   .jk .footer-links { gap: 14px 20px; }
+}
+
+/* ── 第三版：真实提交表单、回执、进度页 ──────────────────────────── */
+/* Demo 卡片封面右上角的「功能示意」角标：示意图封面必须标出来，不能被当成运行截图 */
+.jk .demo-cover-kind { position: absolute; right: 12px; top: 14px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: rgba(23, 23, 42, 0.72); color: #fff; }
+/* 折叠的「补充信息（选填）」：和必填字段用一条细线隔开，不打扰主流程 */
+.jk .intake-extra { border-top: 1px dashed var(--jk-card-border); margin: 4px 0 24px; padding-top: 4px; }
+.jk .intake-extra > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-size: 14px; color: var(--jk-accent-soft-text); }
+.jk .intake-extra[open] > summary { margin-bottom: 16px; }
+.jk .intake-check { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; font-weight: 400 !important; cursor: pointer; }
+.jk .intake-check input { margin-top: 4px; }
+.jk details.intake-preview > summary { cursor: pointer; font-size: 15px; font-weight: 700; min-height: 32px; }
+.jk details.intake-preview[open] > summary { margin-bottom: 16px; }
+.jk .intake-login, .jk .intake-submit-error { border-radius: 12px; padding: 16px 20px; margin: 8px 0 0; font-size: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.jk .intake-login { border: 1px solid var(--jk-accent-soft-border); background: var(--jk-accent-soft-bg); color: var(--jk-text-2); }
+.jk .intake-login b { color: var(--jk-text); }
+.jk .intake-submit-error { border: 1px solid var(--jk-red-text); background: var(--jk-red-bg); color: var(--jk-text); }
+.jk .intake-submit-error a { text-decoration: underline; }
+.jk .intake-receipt { border: 1px solid var(--jk-card-border); border-radius: 14px; background: var(--jk-card); padding: var(--jk-pad); }
+.jk .intake-receipt dl, .jk .receipt-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px var(--jk-gap); margin: 16px 0; }
+.jk :is(.intake-receipt, .receipt-meta) dt { font-size: 12.5px; color: var(--jk-text-3); letter-spacing: 0; margin: 0; }
+.jk :is(.intake-receipt, .receipt-meta) dd { margin: 2px 0 0; font-size: 15px; color: var(--jk-text); }
+.jk .receipt-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; user-select: all; overflow-wrap: anywhere; }
+.jk .intake-receipt-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+/* 作品附件 */
+.jk .work-assets { margin: -12px 0 26px; }
+.jk .work-assets progress { width: 100%; height: 6px; margin-top: 10px; accent-color: var(--jk-accent); }
+.jk .work-asset-list { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 6px; }
+.jk .work-asset-list li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; padding: 8px 12px; border: 1px solid var(--jk-card-border); border-radius: 8px; background: var(--jk-card); min-width: 0; }
+.jk .work-asset-list li > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jk .work-asset-list li small { color: var(--jk-text-3); }
+.jk .work-asset-list li button { display: grid; place-items: center; width: 32px; height: 32px; border: 0; background: none; color: var(--jk-text-2); cursor: pointer; border-radius: 6px; }
+.jk .work-asset-list li button:hover { background: var(--jk-fill-2); }
+.jk .work-asset-list a { color: var(--jk-accent-soft-text); text-decoration: underline; overflow-wrap: anywhere; }
+/* 进度页 /my/... */
+.jk .receipt-page { padding-top: 40px; }
+.jk .receipt-page h1 { font-size: clamp(24px, 3.4vw, 32px); font-weight: 700; line-height: 1.35; margin-bottom: 8px; overflow-wrap: anywhere; }
+.jk .receipt-muted { color: var(--jk-text-2); font-size: 14px; }
+.jk .receipt-box { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 32px 0; color: var(--jk-text-2); }
+.jk .receipt-box a:not(.btn-primary) { color: var(--jk-accent-soft-text); }
+.jk .receipt-note { border-left: 3px solid var(--jk-amber-text); background: var(--jk-amber-bg); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 8px 0 16px; font-size: 14px; }
+.jk .receipt-note p { margin-top: 4px; white-space: pre-wrap; }
+.jk .receipt-section { border-top: 1px solid var(--jk-card-border); padding: 24px 0; }
+.jk .receipt-section h2 { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+.jk .receipt-values > div { padding: 8px 0; }
+.jk .receipt-values dt { font-size: 12.5px; color: var(--jk-text-3); margin: 0; letter-spacing: 0; }
+.jk .receipt-values dd { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--jk-text); }
+.jk .receipt-work { padding: 12px 0; }
+.jk .receipt-work h3 { font-size: 16px; font-weight: 700; }
+.jk .receipt-work a { color: var(--jk-accent-soft-text); overflow-wrap: anywhere; }
+.jk .analysis-block { margin: 12px 0; font-size: 14.5px; }
+.jk .analysis-feasibility { margin-bottom: 8px; }
+.jk .analysis-list { margin-top: 14px; }
+.jk .analysis-list h3 { font-size: 13px; color: var(--jk-text-3); font-weight: 600; margin-bottom: 4px; }
+.jk .analysis-list ul { padding-left: 1.2em; list-style: disc; color: var(--jk-text-2); }
+.jk .analysis-list a { color: var(--jk-accent-soft-text); text-decoration: underline; }
+/* 联系区邮箱卡：地址是可选中的纯文本 */
+.jk .contact-email-value { user-select: all; overflow-wrap: anywhere; font-size: 16px; }
+@media (max-width: 480px) {
+  .jk .intake-receipt dl, .jk .receipt-meta { grid-template-columns: minmax(0, 1fr); }
 }

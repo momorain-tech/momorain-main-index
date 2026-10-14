@@ -16,6 +16,7 @@ import {
   checkPublish,
   type CaseContent,
   type CaseOutput,
+  type CoverKind,
   type Maturity,
   type OutputKind,
   type OutputType,
@@ -66,6 +67,7 @@ type FormState = {
   coverAlt: string
   coverWidth: string
   coverHeight: string
+  coverKind: CoverKind
   // 案例内容：文字段
   audience: string
   scenario: string
@@ -110,6 +112,7 @@ function toFormState(p?: AdminProject): FormState {
     coverAlt: p?.cover?.alt ?? "",
     coverWidth: p?.cover?.width ? String(p.cover.width) : "",
     coverHeight: p?.cover?.height ? String(p.cover.height) : "",
+    coverKind: p?.cover?.kind ?? "screenshot",
     audience: c?.audience ?? "",
     scenario: c?.scenario ?? "",
     problem: c?.problem ?? "",
@@ -203,6 +206,7 @@ function toPayload(form: FormState, published: boolean) {
           alt: form.coverAlt.trim(),
           width: num(form.coverWidth),
           height: num(form.coverHeight),
+          kind: form.coverKind,
         }
       : undefined,
     caseContent,
@@ -486,6 +490,16 @@ export function ProjectForm({ initial }: { initial?: AdminProject }) {
             />
           </Field>
         </div>
+        <Field label="封面类型" hint="功能示意图会在卡片上标「功能示意」，且不能用于精选">
+          <select
+            className={inputClass}
+            value={form.coverKind}
+            onChange={(e) => update("coverKind", e.target.value as CoverKind)}
+          >
+            <option value="screenshot">真实截图 / 成片帧</option>
+            <option value="illustration">功能示意图（非运行截图）</option>
+          </select>
+        </Field>
       </Group>
 
       {/* ── 真实成果 ── */}

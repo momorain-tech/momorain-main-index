@@ -15,10 +15,24 @@
 // - AI 视频工坊：登录门槛从「开拍」挪到了「开始创作」（OpenMontage DEPLOY.md，2026-09-08）
 
 import type { Project } from "./projects"
+import type { ProjectCover } from "./project-content"
+
+// 第三版的过渡封面：自制的功能示意图（public/images/demos/<slug>/cover.svg），不是运行截图。
+// 卡片上会标「功能示意」，也不能用于精选。线上库由 migrations/006 写入同样的值
+function illustrationCover(slug: string, name: string): ProjectCover {
+  return {
+    url: `/images/demos/${slug}/cover.svg`,
+    alt: `${name}的输入输出功能示意，非运行截图`,
+    width: 1440,
+    height: 900,
+    kind: "illustration",
+  }
+}
 
 export const STATIC_PROJECTS: Project[] = [
   {
     slug: "cv-workshop",
+    cover: illustrationCover("cv-workshop", "简历工坊"),
     icon: "📄",
     name: "简历工坊",
     desc: "在线写简历：左边编辑，右边实时预览，一键导出 PDF",
@@ -30,6 +44,7 @@ export const STATIC_PROJECTS: Project[] = [
   },
   {
     slug: "clip-sketch",
+    cover: illustrationCover("clip-sketch", "视频转手绘"),
     icon: "✏️",
     name: "视频转手绘",
     desc: "把短视频变成手绘分步教程图，顺带写好社媒文案和封面",
@@ -71,6 +86,7 @@ export const STATIC_PROJECTS: Project[] = [
   },
   {
     slug: "openmontage",
+    cover: illustrationCover("openmontage", "AI 视频工坊"),
     icon: "🎬",
     name: "AI 视频工坊",
     desc: "一句话生成手绘解说视频",
@@ -100,6 +116,7 @@ export const STATIC_PROJECTS: Project[] = [
   },
   {
     slug: "exprtrain",
+    cover: illustrationCover("exprtrain", "表达训练"),
     icon: "🗣️",
     name: "表达训练",
     desc: "对着麦克风说话，实时找出口头禅和含糊用词，AI 给出改进建议",
@@ -111,6 +128,7 @@ export const STATIC_PROJECTS: Project[] = [
   },
   {
     slug: "whiteboard-video",
+    cover: illustrationCover("whiteboard-video", "白板视频"),
     icon: "🖍️",
     name: "白板视频",
     desc: "把中文逐字稿做成带配音、字幕的白板手绘动画视频",

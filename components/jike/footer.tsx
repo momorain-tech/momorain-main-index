@@ -3,6 +3,7 @@ import Link from "next/link"
 import { contactConfig } from "@/config/contact"
 import { platformNavigation } from "@/config/platform"
 import { siteConfig } from "@/config/site"
+import { BrandMark } from "@/components/jike/brand-mark"
 
 // 页脚是服务端组件（没有 "use client"）：不需要交互，内容在构建时就渲染进 HTML。
 //
@@ -16,10 +17,10 @@ export function JikeFooter() {
         <div className="platform-footer-row">
           <div>
             <Link className="logo" href="/">
-              <span className="logo-mark" aria-hidden="true">↗</span>
+              <BrandMark />
               {siteConfig.name}
             </Link>
-            <p>让技术找到需求，让需求走向落地。</p>
+            <p>让 AI 能力，落到真实业务。</p>
             <p className="footer-wechat">
               微信联系：<span className="consult-id-value">{contactConfig.wechatId}</span>
             </p>

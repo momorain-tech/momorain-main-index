@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react"
 import type { SessionUser } from "@/lib/auth"
 import { ModelAccessSection } from "@/components/account/model-access-section"
 import { ProfileSection } from "@/components/account/profile-section"
+import { SubmissionsSection } from "@/components/account/submissions-section"
 
 // 账号页的客户端主体
 //
@@ -87,6 +88,7 @@ export function AccountView() {
   return (
     <div className="space-y-6">
       <ProfileSection user={user} onNeedLogin={handleNeedLogin} />
+      <SubmissionsSection onNeedLogin={handleNeedLogin} />
       <ModelAccessSection onNeedLogin={handleNeedLogin} />
     </div>
   )

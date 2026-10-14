@@ -5,7 +5,7 @@ import { IntakeForm } from "@/components/participation/intake-form"
 
 export const metadata: Metadata = {
   title: "我能提供 AI 服务",
-  description: "整理真实作品、服务能力与承接条件，通过 AI有活交流作品展示和服务合作。",
+  description: "提交服务资料和代表作品，由 AI有活审核后对接需求与展示机会。",
 }
 export default function ProviderJoinPage() {
   return (
@@ -14,33 +14,27 @@ export default function ProviderJoinPage() {
         ← 返回服务内容
       </Link>
       <header>
-        <span className="kicker">For builders</span>
-        <h1>
-          让你的 AI 解决能力，
-          <br />
-          被有需求的人看见。
-        </h1>
+        <h1>提交服务资料</h1>
         <p>
-          面向具备 AI
-          应用开发、工具集成或业务解决能力的个人与小团队，通过真实作品和人工沟通寻找合适的合作机会。
+          面向提供 AI 服务的个人和团队：业务咨询、能力培训、定制化 Agent、各类 AI
+          工具都可以。三步提交，至少一个真实作品，提供方式任选一种。
         </p>
         <a className="inline-link" href="#requirements">
-          查看资料整理要求 ↓
+          资料要求与审核说明 ↓
         </a>
       </header>
       <details id="requirements" className="platform-details">
-        <summary>资料要求与合作说明</summary>
+        <summary>资料要求与审核说明</summary>
         <div className="platform-details-body">
           <p>
-            至少一个可查看的真实作品，说明输入输出、本人承担的工作、第三方或开源基础，以及可公开范围。没有在线
-            Demo，也可以提供录屏或成果链接。
+            至少一个真实作品：给一个在线链接、上传截图或录屏、或提交构建好的静态网页包，三选一即可。基于开源项目改造的，请写明原项目和你改造的部分。
           </p>
           <p>
-            平台协助展示能力、对接需求、核对合作边界。资料需要人工核对，提交不代表通过审核，也不保证订单；具体合作、报价与排期由双方沟通确认。
+            提交后进入平台审核。审核只核对资料是否完整、可公开，不代表认证或订单承诺；公开展示前会和你确认内容。静态网页包审核通过后部署到独立的展示域名，部署完成前不会有可访问地址。
           </p>
         </div>
       </details>
-      <Suspense fallback={<p>正在准备资料整理工具，也可以直接通过微信发送作品。</p>}>
+      <Suspense fallback={<p>正在准备资料表单，也可以直接通过微信发送作品。</p>}>
         <IntakeForm kind="provider" />
       </Suspense>
     </div>

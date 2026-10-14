@@ -3,7 +3,7 @@ export const siteConfig = {
   name: "AI有活",
   brand: "momorain",
   description:
-    "AI有活连接 AI 应用需求与服务能力。通过真实 Demo 展示、需求梳理和平台人工对接，让技术找到需求，让需求走向落地。",
+    "AI有活连接有业务升级需求的企业与提供 AI 服务的个人和团队，通过需求分析、作品展示与人工对接，推进项目落地。",
   url: "https://momorain.com",
   links: {
     github: "https://github.com/momorain-tech",

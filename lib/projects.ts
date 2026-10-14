@@ -51,6 +51,20 @@ const PROJECT_COLUMNS =
 // 如果有一处忘了加，下架的项目就会从那一处漏出来（§9.3 第 6 条）
 const PUBLIC_FILTER = "published = 1"
 
+// 过渡补丁（2026-10-15，用户拍板「不改生产库」）：线上 projects 表还没跑 migrations/007，
+// cover.url 仍指向旧的 cover.svg。这里统一改写成 Seedream jpg——部署即生效，不写数据库。
+// 007 跑完（或后台把封面换成真实截图）后，这个改写不再命中任何行，成为空操作，可整体删除。
+function rewriteLegacyCover(slug: string, cover: ProjectCover | null): ProjectCover | null {
+  if (!cover || !cover.url.includes(`/images/demos/${slug}/cover.svg`)) return cover
+  return {
+    url: `/images/demos/${slug}/cover.jpg`,
+    alt: cover.alt,
+    width: 2560,
+    height: 1600,
+    kind: cover.kind ?? "illustration",
+  }
+}
+
 function rowToProject(row: ProjectRow): Project {
   return {
     slug: row.slug,
@@ -64,7 +78,7 @@ function rowToProject(row: ProjectRow): Project {
     ownership: row.ownership ?? undefined,
     maturity: row.maturity ?? undefined,
     featured: row.featured === 1,
-    cover: row.cover ?? undefined,
+    cover: rewriteLegacyCover(row.slug, row.cover) ?? undefined,
     caseContent: row.case_content ?? undefined,
   }
 }

@@ -5,9 +5,10 @@
 用法（Key 不落盘，从环境变量读取）:
     DOUBAO_IMAGE_API_KEY=xxx python3 scripts/gen-covers.py
 
-输出: public/covers/{slug}.jpg（2560x1600，约 ¥0.15/张）。
-风格: 深色背景 + 紫罗兰/青色霓虹渐变 + 扁平插画，与站点品牌一致；
-图内不含文字（AI 生成文字易出错），项目名由页面在封面下方展示。
+输出: public/images/demos/{slug}/cover.jpg（2560x1600，约 ¥0.15/张），
+前端封面地址跟着换成了 .jpg（lib/projects-data.ts + migrations/007）。
+风格: 2026-10-14 用户反馈两轮后定稿——B站优质视频封面感：每张独立配色、
+独立构图、带一个有表情的人物 + 一条大字中文标题，不再共用统一风格前缀。
 规范出处: workspace 根目录 gimi-illustration-tech.md §10。
 """
 
@@ -28,44 +29,44 @@ MODEL = "doubao-seedream-5-0-260128"
 # Seedream 5.0 最低像素 3,686,400；2560x1600 = 4,096,000 ✓ 且正好 16:10
 SIZE = "2560x1600"
 
-OUT_DIR = Path(__file__).resolve().parents[1] / "public" / "covers"
+REPO = Path(__file__).resolve().parents[1]
 
-# 统一风格前缀，保证六张是一个系列
+# 共享的只有质量底线，风格各张自定（用户 2026-10-14：不要系列感、要活人感、要 B站封面感）
 STYLE = (
-    "深色背景，紫罗兰与青色霓虹渐变光，扁平插画风格，"
-    "简洁现代，画面精致，无文字，无字母，无水印"
+    "B站优质视频封面风格：构图夸张有冲击力，色彩高饱和撞色，插画质感，"
+    "人物表情生动有活力；画面中只出现标题里指定的文字，其余任何文字、字母、水印都不要"
 )
 
 PROJECTS: list[tuple[str, str]] = [
     (
         "talk-to-fengge",
-        "一个年轻人戴着耳机对着手机说话，声音化作的声波环绕着一颗发光的AI头像，"
-        "科技感实时语音对话氛围",
+        "暖橙红色调。一个戴耳机的年轻男生半身像，表情夸张兴奋，正对着麦克风说话，"
+        "声波环绕，身后是发光的AI数据流头像。大标题「和AI分身实时聊天」",
     ),
     (
         "whiteboard-video",
-        "一块白板上有一只手握着马克笔正在画手绘插画，画面里是简单的教学示意图和箭头，"
-        "白板边缘泛着柔和光晕，教学讲解氛围",
+        "蓝绿色调。一个老师形象的人手持马克笔站在白板前，手指着板上的手绘示意图，"
+        "表情自信带笑，白板上是圆圈、箭头和简笔画。大标题「白板手绘讲解视频」",
     ),
     (
         "clip-sketch",
-        "一段电影胶片从画面左侧展开，逐渐变成手绘铅笔线条的分步教程草图，"
-        "草图上浮着笔记框和小图标，内容创作氛围",
+        "明黄色调。画面左侧是电影胶片，右侧变成铅笔素描的漫画分格教程，"
+        "一支铅笔正在画，笔尖有魔法光点。大标题「视频秒变手绘教程」",
     ),
     (
         "openmontage",
-        "一张电影分镜板旁边，手绘插画风格的画面帧像纸片一样飞出，"
-        "前方有一台摄像机，AI视频创作氛围",
+        "紫粉色调。电影分镜板前，一个导演模样的人手拿场记板喊开拍，"
+        "分镜纸片像爆炸一样飞出，画面动感十足。大标题「一句话生成解说视频」",
     ),
     (
         "cv-workshop",
-        "桌面上摊开一份简历文档，一支钢笔正在上面书写，"
-        "旁边浮着排版参考线和几块内容卡片，办公专业氛围",
+        "蓝白色调。一个职场年轻人举着自己的简历，表情惊喜，"
+        "简历纸面上排版参考线在发光，旁边浮着几块内容卡片。大标题「简历一键排版」",
     ),
     (
         "exprtrain",
-        "一个麦克风立在画面中央，周围的语音波形逐渐变成字幕条，"
-        "部分字幕被高亮圈出修正标记，口语训练氛围",
+        "青橙色调。一个正在练习口语的年轻人对着麦克风说话，表情专注投入，"
+        "语音波形变成字幕条，几条字幕被荧光圈出。大标题「AI口语陪练」",
     ),
 ]
 
@@ -121,22 +122,23 @@ def main() -> int:
         print("缺少 DOUBAO_IMAGE_API_KEY 环境变量", file=sys.stderr)
         return 1
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
     failed = 0
     for slug, scene in PROJECTS:
-        out = OUT_DIR / f"{slug}.jpg"
+        out_dir = REPO / "public" / "images" / "demos" / slug
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out = out_dir / "cover.jpg"
         print(f"[{slug}] 生成中…", flush=True)
         try:
             png = generate(key, scene)
             to_jpeg_16_10(png, out)
             size_kb = out.stat().st_size // 1024
-            print(f"[{slug}] ✅ {out.relative_to(OUT_DIR.parent)} ({size_kb} KB)", flush=True)
+            print(f"[{slug}] ✅ {out.relative_to(REPO / 'public')} ({size_kb} KB)", flush=True)
         except Exception as e:  # noqa: BLE001 —— 单张失败不中断整批
             failed += 1
             print(f"[{slug}] ❌ {e}", flush=True)
         time.sleep(2)  # 尊重并发限制（文档建议 ≤3）
 
-    print(f"\n完成：{len(PROJECTS) - failed}/{len(PROJECTS)} 张，目录 {OUT_DIR}")
+    print(f"\n完成：{len(PROJECTS) - failed}/{len(PROJECTS)} 张")
     return 1 if failed else 0
 
 

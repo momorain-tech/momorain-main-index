@@ -8,7 +8,6 @@ import { siteConfig } from "@/config/site"
 import { BrandMark } from "@/components/jike/brand-mark"
 import { platformNavigation } from "@/config/platform"
 
-import { ModeToggle } from "@/components/mode-toggle"
 import { UserNav } from "@/components/user-nav"
 import { ConsultationTrigger } from "@/components/consultation/consultation-provider"
 
@@ -50,10 +49,10 @@ export function JikeNav() {
           ))}
         </div>
         <div className="flex min-w-0 items-center gap-3">
-          <ModeToggle />
+          {/* 明暗切换已下线（2026-10-15：全站不做主题切换，二级页面固定清新浅色） */}
           <UserNav />
           <ConsultationTrigger className="nav-cta" context={{ source: "nav" }}>
-            联系平台
+            咨询定制
           </ConsultationTrigger>
           {/* 汉堡按钮只在 ≤768px（导航链接被隐藏时）显示，见 jike.css */}
           <button

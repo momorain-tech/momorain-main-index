@@ -20,6 +20,9 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.pem
 
+# 本地 IDE 状态（Trae）
+.trae/
+
 CLAUDE.md
 # 给 Codex 的本地说明，和 CLAUDE.md 同内容，含服务器地址，不入库
 AGENTS.md

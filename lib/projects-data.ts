@@ -17,14 +17,14 @@
 import type { Project } from "./projects"
 import type { ProjectCover } from "./project-content"
 
-// 第三版的过渡封面：自制的功能示意图（public/images/demos/<slug>/cover.svg），不是运行截图。
-// 卡片上会标「功能示意」，也不能用于精选。线上库由 migrations/006 写入同样的值
+// 功能示意图封面：豆包 Seedream 5.0 生成（scripts/gen-covers.py → public/images/demos/<slug>/cover.jpg），
+// 不是运行截图。卡片上会标「功能示意」，也不能用于精选。线上库由 migrations/007 写入同样的值
 function illustrationCover(slug: string, name: string): ProjectCover {
   return {
-    url: `/images/demos/${slug}/cover.svg`,
-    alt: `${name}的输入输出功能示意，非运行截图`,
-    width: 1440,
-    height: 900,
+    url: `/images/demos/${slug}/cover.jpg`,
+    alt: `${name}的功能示意图，AI 生成，非运行截图`,
+    width: 2560,
+    height: 1600,
     kind: "illustration",
   }
 }
@@ -75,6 +75,7 @@ export const STATIC_PROJECTS: Project[] = [
   },
   {
     slug: "talk-to-fengge",
+    cover: illustrationCover("talk-to-fengge", "Talk to 峰哥"),
     icon: "🎙️",
     name: "Talk to 峰哥",
     desc: "和 AI 分身实时语音聊天，声音和性格都像本人",

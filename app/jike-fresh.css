@@ -1,0 +1,202 @@
+/* ── 二级页面「清新浅色」皮肤（2026-10-15 定稿）────────────────────────
+   加载顺序：jike.css 之后（(public)/layout.tsx）。只覆盖变量与少量结构样式，
+   组件类不动——所有二级页面（项目详情/服务方/表单/登录/账号）共享 .jk 外壳，
+   换一套变量就全组统一。设计原则：
+   - 比暗色霓虹首页更淡、更清新自然：近白冷调底 + 柔和的紫/青品牌色
+   - 与首页共享紫罗兰/青色渐变（--jk-grad 同源），是首页的"浅色亲戚"
+   - 圆角、阴影、留白统一；明暗切换已下线，强制浅色
+   ============================================================ */
+
+:root {
+  --jk-bg: #fbfcff;
+  --jk-card: #ffffff;
+  --jk-card-border: rgba(31, 36, 82, 0.07);
+  --jk-text: #1c2140;
+  --jk-text-2: #5a5f7d;
+  --jk-text-3: #8b90ab;
+  --jk-accent: #8b5cf6;
+  --jk-accent-2: #22b8d8;
+  --jk-grad: linear-gradient(135deg, #8b5cf6, #22b8d8);
+  --jk-radius: 22px; /* 与首页卡片圆角一致 */
+
+  --jk-nav-bg: rgba(255, 255, 255, 0.78);
+  --jk-nav-border: rgba(31, 36, 82, 0.06);
+  --jk-glow-1: rgba(139, 92, 246, 0.08);
+  --jk-glow-2: rgba(34, 184, 216, 0.07);
+  --jk-fill-2: rgba(31, 36, 82, 0.04);
+  --jk-fill-3: #ffffff;
+  --jk-border-2: rgba(31, 36, 82, 0.12);
+
+  --jk-accent-soft-text: #6d4fd6;
+  --jk-accent-soft-bg: rgba(139, 92, 246, 0.09);
+  --jk-accent-soft-border: rgba(139, 92, 246, 0.28);
+  --jk-cyan-soft-text: #0e7d99;
+  --jk-cyan-soft-bg: rgba(34, 184, 216, 0.1);
+  --jk-cyan-soft-border: rgba(34, 184, 216, 0.32);
+  --jk-green-text: #14915b;
+  --jk-green-bg: rgba(20, 145, 91, 0.12);
+  --jk-red-text: #dc3d55;
+  --jk-red-bg: rgba(220, 61, 85, 0.08);
+  --jk-amber-text: #b45309;
+  --jk-amber-bg: rgba(245, 158, 11, 0.14);
+  --jk-amber-border: rgba(245, 158, 11, 0.35);
+
+  --jk-old-panel-bg: rgba(220, 61, 85, 0.04);
+  --jk-new-panel-bg: linear-gradient(160deg, rgba(139, 92, 246, 0.08), rgba(34, 184, 216, 0.05));
+  --jk-new-panel-border: rgba(139, 92, 246, 0.3);
+  --jk-new-panel-shadow: rgba(139, 92, 246, 0.1);
+  --jk-icon-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(34, 184, 216, 0.08));
+  --jk-icon-border: rgba(139, 92, 246, 0.28);
+  --jk-hover-border: rgba(139, 92, 246, 0.4);
+  --jk-hover-shadow: rgba(139, 92, 246, 0.1);
+  --jk-custom-box-bg: linear-gradient(160deg, rgba(139, 92, 246, 0.08), rgba(34, 184, 216, 0.04));
+  --jk-custom-box-border: rgba(139, 92, 246, 0.3);
+  --jk-custom-glow: rgba(139, 92, 246, 0.14);
+  --jk-pop-bg: #ffffff;
+  --jk-pop-border: rgba(139, 92, 246, 0.4);
+
+  /* 留白更足一点：清新感来自空气 */
+  --jk-gap: 22px;
+  --jk-pad: 28px;
+  --jk-pad-sm: 22px;
+}
+
+/* shadcn 令牌（.jk-skin）：换成同套清新浅色，登录页/账号页等 Tailwind 组件自动统一 */
+.jk-skin {
+  --background: 232 80% 99%;
+  --foreground: 234 28% 12%;
+  --muted: 232 40% 96%;
+  --muted-foreground: 232 12% 45%;
+  --border: 232 20% 90%;
+  --input: 232 20% 90%;
+  --primary: 258 90% 66%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 232 30% 95%;
+  --secondary-foreground: 234 28% 12%;
+  --accent: 188 85% 45%;
+  --accent-foreground: 0 0% 100%;
+  --ring: 258 90% 66%;
+}
+
+/* 明暗切换已下线（2026-10-15），但老访客本地可能存着暗色偏好：
+   强制 .dark 上下文也用清新浅色，避免出现"半个网站还是暗的" */
+.dark .jk-skin {
+  --background: 232 80% 99%;
+  --foreground: 234 28% 12%;
+  --muted: 232 40% 96%;
+  --muted-foreground: 232 12% 45%;
+  --border: 232 20% 90%;
+  --input: 232 20% 90%;
+  --primary: 258 90% 66%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 232 30% 95%;
+  --secondary-foreground: 234 28% 12%;
+  --accent: 188 85% 45%;
+  --accent-foreground: 0 0% 100%;
+  --ring: 258 90% 66%;
+}
+
+/* ── 结构级微调 ─────────────────────────────────────────────── */
+
+/* 卡片阴影统一换成柔光：清新感的关键，去掉生硬描边感 */
+.jk .participation-card,
+.jk .proj-card,
+.jk .demo-card,
+.jk .goal-card,
+.jk .provider-profile,
+.jk .platform-details,
+.jk .platform-contact-grid > *,
+.jk .consult-card {
+  box-shadow: 0 10px 32px -14px rgba(31, 36, 82, 0.1);
+}
+
+/* 导航更透亮 */
+.jk nav {
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+/* 导航与首页对齐（2026-10-15：结构级统一，基准 = 首页 V4Nav）：
+   容器宽度 1200、链接字号、CTA 渐变胶囊、右组间距，全部对齐首页 */
+.jk .nav-inner {
+  width: min(1200px, 100% - 3rem);
+  margin-inline: auto;
+}
+.jk .nav-links {
+  font-size: 0.92rem;
+  gap: 1.75rem;
+}
+.jk .nav-cta {
+  background: var(--jk-grad);
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  box-shadow: 0 6px 18px -8px rgba(139, 92, 246, 0.5);
+  transition: box-shadow 0.25s, opacity 0.2s;
+}
+.jk .nav-cta:hover {
+  opacity: 1;
+  box-shadow: 0 8px 24px -8px rgba(34, 184, 216, 0.55);
+}
+.jk .nav-inner > .flex {
+  gap: 0.9rem;
+}
+@media (max-width: 400px) {
+  .jk .nav-inner > .flex {
+    gap: 6px;
+  }
+}
+
+/* 按钮与首页对齐：同字号（1rem）、同内边距；主按钮渐变（上面已换），
+   ghost 补 1px 描边与首页 btnGhost 一致 */
+.jk .btn-primary {
+  padding: 13px 28px;
+  font-size: 1rem;
+}
+.jk .btn-ghost {
+  padding: 13px 28px;
+  font-size: 1rem;
+  border: 1px solid var(--jk-border-2);
+}
+
+/* 标签与首页 chip 对齐：统一胶囊形 + 品牌紫色调。
+   成熟度状态色（绿/青/琥珀）是语义色，保留不动 */
+.jk .demo-tags > span {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--jk-accent-soft-bg);
+  color: var(--jk-accent-soft-text);
+}
+.jk .proj-label {
+  font-size: 12px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--jk-accent-soft-bg);
+  color: var(--jk-accent-soft-text);
+  border: 1px solid var(--jk-accent-soft-border);
+}
+
+/* 主按钮用品牌渐变（与首页同源），浅色底上更柔和 */
+.jk .btn-primary {
+  background: var(--jk-grad);
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 22px -10px rgba(139, 92, 246, 0.55);
+}
+
+/* 背景加一层极淡的品牌光晕：浅色页面的"霓虹回忆"，不至于全白发闷 */
+.jk-skin.jk > main {
+  background:
+    radial-gradient(60% 36% at 12% 0%, rgba(139, 92, 246, 0.05), transparent 70%),
+    radial-gradient(50% 30% at 92% 8%, rgba(34, 184, 216, 0.05), transparent 70%);
+}
+
+/* 页脚与首页对齐：容器宽度统一 1200，白底换成透底（页面底色透上来） */
+.jk .platform-footer {
+  background: transparent;
+  padding: 2.4rem 0 3rem;
+}
+.jk .platform-footer .wrap {
+  width: min(1200px, 100% - 3rem);
+  max-width: none;
+  padding: 0;
+}

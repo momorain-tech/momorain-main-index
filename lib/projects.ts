@@ -65,6 +65,22 @@ function rewriteLegacyCover(slug: string, cover: ProjectCover | null): ProjectCo
   }
 }
 
+// talk-to-fengge 封面（2026-10-15 授权确认）：线上库没有封面记录，从代码补默认值。
+// 后台以后录入真实封面（cover 非空）后，此补丁自动让位。
+// 高曝光限制不变：它仍不进精选与 AI 初评推荐（config/home.ts 的 highExposureExcludeSlugs）。
+function coverWithFallbacks(slug: string, cover: ProjectCover | null): ProjectCover | null {
+  if (slug === "talk-to-fengge" && !cover) {
+    return {
+      url: "/images/demos/talk-to-fengge/cover.jpg",
+      alt: "Talk to 峰哥的功能示意图，AI 生成，非运行截图",
+      width: 2560,
+      height: 1600,
+      kind: "illustration",
+    }
+  }
+  return rewriteLegacyCover(slug, cover)
+}
+
 function rowToProject(row: ProjectRow): Project {
   return {
     slug: row.slug,
@@ -78,7 +94,7 @@ function rowToProject(row: ProjectRow): Project {
     ownership: row.ownership ?? undefined,
     maturity: row.maturity ?? undefined,
     featured: row.featured === 1,
-    cover: rewriteLegacyCover(row.slug, row.cover) ?? undefined,
+    cover: coverWithFallbacks(row.slug, row.cover) ?? undefined,
     caseContent: row.case_content ?? undefined,
   }
 }

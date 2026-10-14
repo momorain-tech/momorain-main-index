@@ -37,11 +37,12 @@
   旧 SVG 文件已删（用户确认废弃），执行前先从 git 历史恢复：
   `git checkout 893cde9 -- public/images/demos`（仅恢复目录内 SVG）。
 
-## 四、talk-to-fengge 封面（等授权）
+## 四、talk-to-fengge 封面（2026-10-15 授权确认）
 
-图片已生成（`public/images/demos/talk-to-fengge/cover.jpg`），但按 workspace 约定
-（真人声音克隆，对外曝光前先确认授权），线上库不写封面。
-**授权确认后**执行 migrations/007 末尾注释掉的 UPDATE 即可。
+授权已确认。封面不走数据库：`lib/projects.ts` 的 `coverWithFallbacks` 在线上库无封面记录时
+直接补 `cover.jpg`（kind=illustration，卡片标「功能示意」）。
+后台以后录入真实封面（cover 非空）后自动让位。
+高曝光限制不变：仍不进首页精选与 AI 初评推荐（config/home.ts 的 highExposureExcludeSlugs）。
 
 ## 五、结构变化速览
 

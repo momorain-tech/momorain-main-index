@@ -306,6 +306,8 @@ export function IntakeForm({
     setWorks([{}])
     setAssets({})
     setReference("")
+    // 新的一份需求要重新征得 AI 初评授权：默认不勾，不能沿用上一份的选择
+    setAnalysisConsent(false)
     setRequestKey(makeKey())
     setReceipt(null)
     setSubmitError(null)

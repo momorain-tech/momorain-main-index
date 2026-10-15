@@ -151,6 +151,26 @@ export function normalizeValues(fields: IntakeField[], data: Values): Values {
   return out
 }
 
+// 把规范化后的新格式资料还原成「改版前」的样子：三个联系方式字段的位置换成 contactType + contact。
+// 只用来算旧版的幂等哈希——旧页面提交成功但没收到响应、上线后用同一个幂等键重试时，
+// 服务端会先把旧格式搬到新字段（migrateLegacyContact），内容哈希因此变了，不还原就会被误判成 409 冲突。
+// 旧版只能留一种联系方式，所以只有「恰好填了一项」时才有对应的旧格式，否则返回 null。
+// 能这样逐键替换，是因为旧版 contactType、contact 在字段定义里的位置，正好就是现在三个联系方式字段的位置
+export function legacyContactShape(values: Values): Values | null {
+  const filled = CONTACT_TYPES.filter((t) => typeof values[CONTACT_KEYS[t]] === "string")
+  if (filled.length !== 1) return null
+  const contactKeys = new Set(Object.values(CONTACT_KEYS))
+  const out: Values = {}
+  for (const [k, v] of Object.entries(values)) {
+    if (!contactKeys.has(k)) out[k] = v
+    else if (k === CONTACT_KEYS[filled[0]]) {
+      out.contactType = filled[0]
+      out.contact = v
+    }
+  }
+  return out
+}
+
 // 幂等键：浏览器为「这一次填写」生成，重试时带同一个
 export function isRequestKey(v: unknown): v is string {
   return typeof v === "string" && /^[A-Za-z0-9_-]{16,64}$/.test(v)

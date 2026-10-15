@@ -11,6 +11,7 @@ const {
   validateDemandSubmission,
   validateProviderSubmission,
   validateWork,
+  legacyContactShape,
 } = load('lib/intake-validation.ts')
 const { contactsOf, migrateLegacyContact } = load('components/participation/intake-fields.ts')
 
@@ -148,6 +149,20 @@ test('旧格式兼容：contactType + contact 的提交和草稿搬到新字段�
   assert.deepEqual(contactsOf({ contactType: '邮箱', contact: 'a@b.cn' }), [{ type: '邮箱', value: 'a@b.cn' }])
   assert.deepEqual(contactsOf({ email: 'a@b.cn', phone: '13800138000' }).map((c) => c.type), ['电话', '邮箱'])
   assert.deepEqual(contactsOf({ contactType: '其他', contact: 'x' }), [])
+})
+test('跨版本重试：迁移后的内容能还原成改版前的规范化结果（幂等哈希逐字节一致），多填了就没有旧版对应', () => {
+  // 改版前 normalizeValues 的产物：键按旧字段定义顺序，contactType、contact 在 name 后面
+  const oldDemand = { problem: demand.values.problem, outcome: demand.values.outcome, name: '王先生', contactType: '电话', contact: '13800138000' }
+  const { wechat: _, ...rest } = demand.values
+  const migrated = validateDemandSubmission({ ...demand, values: { ...rest, contactType: '电话', contact: '13800138000' } }).value.values
+  assert.equal(JSON.stringify(legacyContactShape(migrated)), JSON.stringify(oldDemand))
+  // 服务方：联系方式后面还有字段（type、city），位置也要对上
+  const oldProfile = { displayName: '测试工作室', directions: ['定制化 Agent'], capability: '做企业知识库问答', name: '李', contactType: '邮箱', contact: 'li@example.com', type: '个人', city: '杭州' }
+  const { email: __, ...p } = provider.values
+  const res = validateProviderSubmission({ ...provider, values: { ...p, city: '杭州', type: '个人', contactType: '邮箱', contact: 'li@example.com' } })
+  assert.equal(JSON.stringify(legacyContactShape(res.value.profile)), JSON.stringify(oldProfile))
+  // 新格式填了两项：旧版不可能有这样的提交
+  assert.equal(legacyContactShape({ name: 'x', phone: '13800138000', email: 'a@b.cn' }), null)
 })
 test('需求提交：没勾 AI 初评就是 false，不能靠传字符串蒙混成同意', () => {
   assert.equal(validateDemandSubmission({ ...demand, analysisConsent: 'true' }).value.analysisConsent, false)

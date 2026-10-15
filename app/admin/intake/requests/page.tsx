@@ -79,7 +79,17 @@ export default async function AdminIntakeRequestsPage({ searchParams }: PageProp
         <Stat label="提交用户数" value={stats.users} foot="提交过需求的不同账号" />
       </div>
 
-      <form method="get" action={BASE} className="flex flex-wrap items-end gap-2" role="search">
+      {/* 输入框用 defaultValue（不受控），React 只在第一次渲染时把它写进输入框。
+          「清除筛选」、统计卡、翻页都是 Link 软跳转：页面换了数据，表单这个元素却被原样复用，
+          里面还留着上一次的选择，再点「筛选」会把旧条件带回去。
+          key 跟着筛选条件变 → 条件一变，React 把整个表单扔掉重建，输入框回到当前地址栏的值 */}
+      <form
+        key={`${q ?? ""}|${status ?? ""}|${contactType ?? ""}`}
+        method="get"
+        action={BASE}
+        className="flex flex-wrap items-end gap-2"
+        role="search"
+      >
         <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs text-muted-foreground">
           关键词
           <input

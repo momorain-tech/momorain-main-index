@@ -12,7 +12,7 @@ import {
   isContactType,
   type ContactEntry,
 } from "@/components/participation/intake-fields"
-import type { DemandSubmission, ProviderSubmission, Values } from "@/lib/intake-validation"
+import { legacyContactShape, type DemandSubmission, type ProviderSubmission, type Values } from "@/lib/intake-validation"
 import { enqueueAnalysis } from "@/lib/intake/analysis"
 import { newId } from "@/lib/intake/http"
 import {
@@ -37,6 +37,15 @@ import {
 // 2. 「成功」只在事务 COMMIT 之后返回。数据库出任何错，调用方拿到的都是异常，不会是假的 201
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex")
+
+// 重放判断认哪些哈希：现在这份内容的哈希（新记录也存这个），再加上同一份内容在
+// 2026-10-15 联系方式改版前的哈希。改版前入库的记录存的是旧哈希——用户在旧页面提交成功、
+// 没收到响应、上线后重试（或从旧草稿恢复后重试），内容其实一样，应当按重放返回原记录，而不是 409。
+// build 把一份资料对象算成哈希，两类提交各自的哈希组成不同，所以由调用方传进来
+function replayHashes(values: Values, build: (values: Values) => string): Set<string> {
+  const legacy = legacyContactShape(values)
+  return new Set([build(values), ...(legacy ? [build(legacy)] : [])])
+}
 const iso = (d: Date | string) => (d instanceof Date ? d.toISOString() : new Date(d).toISOString())
 
 async function withTx<T>(fn: (conn: PoolConnection) => Promise<T>): Promise<T> {
@@ -102,7 +111,9 @@ export async function createRequest(
     consentVersion: CONSENT_VERSION,
   }
   // 哈希只算用户填的内容（不含同意书版本这种我们这边会变的东西），重放判断才稳定
-  const hash = sha256(JSON.stringify([sub.values, reference?.slug ?? "", sub.analysisConsent]))
+  const hashOf = (values: Values) => sha256(JSON.stringify([values, reference?.slug ?? "", sub.analysisConsent]))
+  const hash = hashOf(sub.values)
+  const accepted = replayHashes(sub.values, hashOf)
   const title = ((sub.values.title as string) || (sub.values.problem as string).replace(/\s+/g, " ")).slice(0, 60)
 
   const existing = async (conn: PoolConnection | null) => {
@@ -114,7 +125,7 @@ export async function createRequest(
     return rows[0]
   }
   const replay = (row: RowDataPacket): CreateOutcome<RequestReceipt> =>
-    row.payload_hash === hash
+    accepted.has(row.payload_hash)
       ? {
           kind: "replayed",
           record: { id: row.id, status: row.status, analysisStatus: row.analysis_status, createdAt: iso(row.created_at) },
@@ -210,7 +221,9 @@ export async function createApplication(
   user: SessionUser,
   sub: ProviderSubmission,
 ): Promise<CreateOutcome<ApplicationReceipt>> {
-  const hash = sha256(JSON.stringify([sub.profile, sub.works]))
+  const hashOf = (profile: Values) => sha256(JSON.stringify([profile, sub.works]))
+  const hash = hashOf(sub.profile)
+  const accepted = replayHashes(sub.profile, hashOf)
   const scope = Array.isArray(sub.profile.publicScope) ? sub.profile.publicScope : []
   const existing = async (conn: PoolConnection | null) => {
     const exec = conn ?? getPool()
@@ -221,7 +234,7 @@ export async function createApplication(
     return rows[0]
   }
   const replay = (row: RowDataPacket): CreateOutcome<ApplicationReceipt> =>
-    row.payload_hash === hash
+    accepted.has(row.payload_hash)
       ? { kind: "replayed", record: { id: row.id, status: row.review_status, createdAt: iso(row.created_at) } }
       : { kind: "conflict" }
 

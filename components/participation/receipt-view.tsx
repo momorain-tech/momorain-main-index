@@ -18,6 +18,7 @@ import {
   type RequestStatus,
 } from "@/lib/intake/constants"
 import type { Values } from "@/lib/intake-validation"
+import { contactsOf } from "./intake-fields"
 
 // 提交者查看自己的回执和进度（/my/requests/[id]、/my/applications/[id]）。
 //
@@ -195,7 +196,10 @@ function RequestReceipt({ data, gaveUp }: { data: RequestView; gaveUp: boolean }
           {data.values.outcome && <Row label="期望结果" value={data.values.outcome} />}
           {data.reference && <Row label="参考作品" value={data.reference.name} />}
           {data.values.name && <Row label="称呼" value={data.values.name} />}
-          {data.values.contact && <Row label={`联系方式（${data.values.contactType}）`} value={data.values.contact} />}
+          {/* 新记录可能留了几种联系方式，旧记录是 contactType + contact，contactsOf 两种都认 */}
+          {contactsOf(data.values).map((c) => (
+            <Row key={c.type} label={`联系方式（${c.type}）`} value={c.value} />
+          ))}
         </dl>
       </section>
       <p>

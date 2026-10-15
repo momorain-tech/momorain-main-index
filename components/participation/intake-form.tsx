@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, Mail, MessageCircle, Pencil, Phone, Plus, Trash2 } from "lucide-react"
 import {
+  CONTACT_GROUP,
+  CONTACT_GROUP_TEXT,
   WORK_METHODS,
+  contactsOf,
   demandGroups,
+  migrateLegacyContact,
   providerGroups,
   workFields,
   type IntakeField,
@@ -15,9 +19,9 @@ import { WorkAssets, type UploadConfig } from "./work-assets"
 import { projectProvider } from "@/config/platform"
 import {
   MAX_WORKS,
+  contactErrors,
   isDraft,
   isFieldVisible,
-  validateContact,
   validateFields,
   validateWork,
   type AssetMeta,
@@ -78,8 +82,9 @@ export function IntakeForm({
   const [notice, setNotice] = useState("")
   const [savedDraft, setSavedDraft] = useState<Draft | null>(null)
   const [consent, setConsent] = useState(false)
-  // AI 初评默认勾选，但写清楚送去分析的是什么、不送什么；用户可以取消
-  const [analysisConsent, setAnalysisConsent] = useState(true)
+  // AI 初评是选填：默认**不勾**，用户主动勾上才把需求内容发给模型。
+  // （第三版曾默认勾选。把资料交给第三方模型处理，应当是用户主动同意，而不是没注意到去取消）
+  const [analysisConsent, setAnalysisConsent] = useState(false)
   const [login, setLogin] = useState<LoginState>("unknown")
   const [uploadConfig, setUploadConfig] = useState<UploadConfig | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -137,7 +142,7 @@ export function IntakeForm({
     requestAnimationFrame(() => headingRef.current?.focus())
   }
   function currentDraft(): Draft {
-    return { version: 2, requestKey, values, works, reference, assets }
+    return { version: 2, requestKey, values, works, reference, assets, analysisConsent }
   }
   function saveDraft(silent = false) {
     try {
@@ -161,14 +166,18 @@ export function IntakeForm({
     }
   }
   function applyDraft(d: Draft, toLastStep = false) {
-    setValues(d.values)
+    // 上线前存下的草稿是旧格式（contactType + contact），搬到新的三个字段上，填过的不丢
+    setValues(migrateLegacyContact(d.values))
     setWorks(d.works)
     setAssets(d.assets)
     setRequestKey(d.requestKey) // 沿用草稿的幂等键：万一之前那次其实提交成功了，重试不会重复
+    setAnalysisConsent(d.analysisConsent === true) // 旧草稿没有这个字段 = 没同意
     // 从 Demo 进入时优先保留本次来源，不能被旧草稿悄悄覆盖。
     setReference(initialReference || (projects.some((p) => p.slug === d.reference) ? d.reference : ""))
     setSavedDraft(d)
     go(toLastStep ? lastStep : 0)
+    // go() 会清空提示，所以这句放在它后面
+    if (toLastStep) setNotice("已恢复登录前填写的内容。请核对后重新勾选确认，再点提交。")
   }
   function update(key: string, value: string | string[]) {
     setValues((v) => ({ ...v, [key]: value }))
@@ -180,10 +189,7 @@ export function IntakeForm({
     if (s === worksStep) {
       works.forEach((w, i) => Object.assign(next, validateWork(w, `work-${i}-`)))
     } else Object.assign(next, validateFields(groups[s].fields, values))
-    if (groups[s].fields.some((f) => f.key === "contact")) {
-      const error = validateContact(values.contactType, values.contact)
-      if (error) next.contact = error
-    }
+    if (groups[s].fields.some((f) => f.oneOf === CONTACT_GROUP)) Object.assign(next, contactErrors(values))
     return next
   }
   function showErrors(next: Record<string, string>) {
@@ -279,8 +285,14 @@ export function IntakeForm({
     }
     if (res.status === 422 && data.errors) {
       // 服务端校验没过（理论上前端已经挡住了，除非两边规则不一致或附件失效）：定位到对应字段
-      const keys = Object.keys(data.errors)
-      const target = keys.some((k) => k.startsWith("work-") || k === "assets") ? worksStep : 0
+      // 跳到「最靠前的出错字段」所在的那一步。以前只分「作品 / 其他」，其他一律回第一步——
+      // 联系方式在需求的第二步，服务端拒收联系方式时会把人带到一个没有出错输入框的页面
+      const stepOf = (k: string) => {
+        if (k.startsWith("work-") || k === "assets") return worksStep
+        const s = groups.findIndex((g) => g.fields.some((f) => f.key === k || (k === CONTACT_GROUP && f.oneOf === CONTACT_GROUP)))
+        return s >= 0 ? s : 0
+      }
+      const target = Math.min(...Object.keys(data.errors).map(stepOf))
       if (target >= 0 && target !== step) go(target)
       requestAnimationFrame(() => showErrors(data.errors!))
       setSubmitError({ message: data.error ?? "还有资料需要补充，请检查标出的项目。" })
@@ -322,6 +334,12 @@ export function IntakeForm({
               <dt>当前状态</dt>
               <dd>{kind === "demand" ? "已接收，等待平台跟进" : "待审核"}</dd>
             </div>
+            {contactsOf(values).length > 0 && (
+              <div>
+                <dt>平台会通过</dt>
+                <dd>{contactsOf(values).map((c) => c.type).join("、")}联系你</dd>
+              </div>
+            )}
             {kind === "demand" && receipt.analysisStatus && (
               <div>
                 <dt>AI 初评</dt>
@@ -363,12 +381,15 @@ export function IntakeForm({
         else next()
       }}
     >
-      <div className="intake-notice">
-        <b>提交后由平台后台接收，专人跟进</b>
-        <p>
-          填写不需要登录；点「提交」时需要用手机号登录，方便你之后查看进度。微信和邮箱联系依然可用，不受影响。
-        </p>
-      </div>
+      {/* 需求页把这段说明放进了右侧「填写帮助」（app/(public)/requests/new/page.tsx），这里只给服务方页 */}
+      {kind === "provider" && (
+        <div className="intake-notice">
+          <b>提交后由平台后台接收，专人跟进</b>
+          <p>
+            填写不需要登录；点「提交」时需要用手机号登录，方便你之后查看进度。微信和邮箱联系依然可用，不受影响。
+          </p>
+        </div>
+      )}
       {savedDraft && step === 0 && (
         <div className="draft-banner">
           <span>当前浏览器有一份本地草稿。</span>
@@ -398,29 +419,33 @@ export function IntakeForm({
       <p className="intake-step-desc">{groups[step].description}</p>
       <p className="intake-required-note">标有 * 的项目为必填，其余可以稍后沟通。</p>
 
-      {kind === "demand" && step === 0 && projects.length > 0 && (
-        <div className="intake-field">
-          <label htmlFor="reference-project">
-            参考 Demo<small>（选填）</small>
-          </label>
-          <select id="reference-project" value={reference} onChange={(e) => setReference(e.target.value)}>
-            <option value="">暂不选择参考作品</option>
-            {projects.map((p) => (
-              <option key={p.slug} value={p.slug}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          {provider && <p className="field-hint">提供者：{provider.name} · 会一起提交给平台。</p>}
-        </div>
-      )}
-
       {step !== worksStep && (
         <FieldList
           fields={visible(groups[step].fields, values)}
           values={values}
           errors={errors}
           onChange={update}
+          // 参考 Demo 放在必填项后面、折叠区前面：从某个 Demo 点进来时它是预先选好的，
+          // 收进折叠区用户就看不到「我是从哪个作品来的」
+          beforeExtra={
+            kind === "demand" && step === 0 && projects.length > 0 ? (
+              <div className="intake-field">
+                <label htmlFor="reference-project">
+                  参考 Demo<small>（选填）</small>
+                </label>
+                <p className="field-hint">看到哪个作品和你的需求接近，可以选上，平台会参考它来理解你的需求。</p>
+                <select id="reference-project" value={reference} onChange={(e) => setReference(e.target.value)}>
+                  <option value="">暂不选择参考作品</option>
+                  {projects.map((p) => (
+                    <option key={p.slug} value={p.slug}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                {provider && <p className="field-hint">提供者：{provider.name} · 会一起提交给平台。</p>}
+              </div>
+            ) : null
+          }
         />
       )}
 
@@ -489,16 +514,36 @@ export function IntakeForm({
 
       {isLast && (
         <>
-          <details className="intake-preview">
-            <summary>核对已填写的内容</summary>
-            <pre>{summaryText(kind, values, works, assets, project?.name)}</pre>
-          </details>
+          {kind === "demand" ? (
+            // 需求只有两步，第一步的内容不多：直接摊开给用户核对，不再折叠
+            <section className="intake-review" aria-labelledby="intake-review-title">
+              <div className="intake-review-head">
+                <h3 id="intake-review-title">核对需求</h3>
+                <button type="button" className="intake-text-button" onClick={() => go(0)}>
+                  <Pencil size={14} /> 返回修改
+                </button>
+              </div>
+              <dl>
+                {demandReview(values, project?.name).map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : (
+            <details className="intake-preview">
+              <summary>核对已填写的内容</summary>
+              <pre>{summaryText(kind, values, works, assets, project?.name)}</pre>
+            </details>
+          )}
           {kind === "demand" && (
             <label className="intake-consent">
               <input type="checkbox" checked={analysisConsent} onChange={(e) => setAnalysisConsent(e.target.checked)} />
               <span>
-                同时请 AI 做一次需求初评（可行性、下一步、待确认问题），帮助平台更快跟进。只发送需求内容，
-                <b>不发送称呼、联系方式和公司名</b>；初评由平台承担费用，不扣你的额度，结果仅供参考。
+                <b>（选填）</b>同时请 AI 做一次需求初评（可行性、下一步、待确认问题），帮助平台更快跟进。只发送需求内容，
+                <b>不发送称呼、联系方式和公司名</b>；初评由平台承担费用，不扣你的额度，结果仅供参考。不勾选不影响提交和人工跟进。
               </span>
             </label>
           )}
@@ -513,8 +558,9 @@ export function IntakeForm({
           {needLogin && (
             <div className="intake-login" role="alert">
               <p>
-                <b>提交前需要先登录。</b>
-                填写内容已保存在当前浏览器，登录后会自动回到这一步，再点一次「提交」即可。
+                <b>提交前需要先用手机号登录。</b>
+                填写内容已保存在当前浏览器，登录后会自动回到这一步，重新勾选确认后再点「提交」即可。
+                登录手机号只用于查看进度，平台仍按你上面填的联系方式联系你。
               </p>
               <a className="btn-primary btn-md" href={loginHref}>
                 去登录 <ArrowRight size={16} />
@@ -588,6 +634,7 @@ function FieldList({
   idPrefix = "",
   optionsOverride = {},
   after,
+  beforeExtra,
 }: {
   fields: IntakeField[]
   values: Values
@@ -596,11 +643,13 @@ function FieldList({
   idPrefix?: string
   optionsOverride?: Record<string, string[]>
   after?: (key: string) => React.ReactNode
+  beforeExtra?: React.ReactNode
 }) {
+  const resolve = (f: IntakeField): IntakeField => (optionsOverride[f.key] ? { ...f, options: optionsOverride[f.key] } : f)
   const render = (f: IntakeField) => (
     <div key={f.key}>
       <Field
-        field={optionsOverride[f.key] ? { ...f, options: optionsOverride[f.key] } : f}
+        field={resolve(f)}
         idPrefix={idPrefix}
         value={values[f.key]}
         error={errors[idPrefix + f.key]}
@@ -611,11 +660,44 @@ function FieldList({
   )
   const main = fields.filter((f) => !f.extra)
   const extra = fields.filter((f) => f.extra)
+  // 「至少填一项」的那组（联系方式）：在第一项的位置渲染整组 fieldset，组内其余项跳过
+  const oneOf = main.filter((f) => f.oneOf === CONTACT_GROUP)
+  const groupId = `intake-${idPrefix}${CONTACT_GROUP}`
+  const groupError = errors[idPrefix + CONTACT_GROUP]
+  const renderMain = (f: IntakeField) => {
+    if (f.oneOf !== CONTACT_GROUP) return render(f)
+    if (f !== oneOf[0]) return null
+    return (
+      <fieldset
+        key={CONTACT_GROUP}
+        id={groupId}
+        tabIndex={-1}
+        className="intake-field intake-contacts"
+        aria-invalid={!!groupError}
+        aria-describedby={[`${groupId}-hint`, groupError ? `${groupId}-error` : ""].filter(Boolean).join(" ")}
+      >
+        <legend>
+          {CONTACT_GROUP_TEXT.legend}
+          <span aria-label="必填"> *</span>
+        </legend>
+        <p id={`${groupId}-hint`} className="field-hint">
+          {CONTACT_GROUP_TEXT.hint}
+        </p>
+        {groupError && (
+          <p id={`${groupId}-error`} className="field-error">
+            {groupError}
+          </p>
+        )}
+        {oneOf.map(render)}
+      </fieldset>
+    )
+  }
   // 折叠区里有内容或有错时默认展开，不然用户找不到自己填过的东西
   const extraOpen = extra.some((f) => (Array.isArray(values[f.key]) ? values[f.key].length : values[f.key]) || errors[idPrefix + f.key])
   return (
     <>
-      {main.map(render)}
+      {main.map(renderMain)}
+      {beforeExtra}
       {extra.length > 0 && (
         <details className="intake-extra" open={!!extraOpen}>
           <summary>补充信息（选填，可以稍后沟通）</summary>
@@ -624,6 +706,13 @@ function FieldList({
       )}
     </>
   )
+}
+
+// 联系方式三个输入框标题前的小图标
+const icons: Record<string, React.ReactNode> = {
+  电话: <Phone size={15} aria-hidden />,
+  微信: <MessageCircle size={15} aria-hidden />,
+  邮箱: <Mail size={15} aria-hidden />,
 }
 
 // 单个字段。按 type 渲染成输入框 / 多行文本 / 下拉 / 一组复选框 / 单个勾选框，
@@ -650,10 +739,12 @@ function Field({
     "aria-required": !!f.required,
     "aria-describedby": [f.hint ? hintId : "", error ? errorId : ""].filter(Boolean).join(" ") || undefined,
   }
+  // 「至少填一项」组里的字段单看都是选填，但标「选填」会让人以为整组都可以不填，所以不标
   const title = (
     <>
+      {f.oneOf && icons[f.label]}
       {f.label}
-      {f.required ? <span aria-label="必填"> *</span> : <small>（选填）</small>}
+      {f.required ? <span aria-label="必填"> *</span> : f.oneOf ? null : <small>（选填）</small>}
     </>
   )
   const errorNode = error && (
@@ -714,6 +805,7 @@ function Field({
         <textarea
           {...attributes}
           rows={4}
+          placeholder={f.placeholder}
           maxLength={f.max ?? 2000}
           required={f.required}
           value={text}
@@ -727,8 +819,12 @@ function Field({
       ) : (
         <input
           {...attributes}
-          type={f.type === "url" ? "url" : "text"}
-          inputMode={f.type === "url" ? "url" : undefined}
+          // 手机上 type=tel 弹拨号盘、type=email 弹带 @ 的键盘。表单是 noValidate，
+          // 浏览器不会拿自己的规则拦提交，真正的校验仍是 lib/intake-validation.ts
+          type={f.type === "url" ? "url" : f.inputMode === "tel" ? "tel" : f.inputMode === "email" ? "email" : "text"}
+          inputMode={f.type === "url" ? "url" : f.inputMode}
+          autoComplete={f.autoComplete}
+          placeholder={f.placeholder}
           maxLength={f.max ?? 2000}
           required={f.required}
           value={text}
@@ -738,6 +834,19 @@ function Field({
       {errorNode}
     </div>
   )
+}
+
+// 需求第二步「核对需求」里列出的内容：第一步填了的字段 + 参考 Demo。
+// 联系方式就在同一页上面，不用再列一遍。没填的选填项不出现，藏起来的条件字段也不出现
+function demandReview(values: Values, referenceName?: string): [string, string][] {
+  const rows: [string, string][] = demandGroups[0].fields.flatMap((f): [string, string][] => {
+    if (!isFieldVisible(f, values)) return []
+    const raw = values[f.key]
+    const text = Array.isArray(raw) ? raw.join("、") : raw?.trim()
+    return text ? [[f.label, text]] : []
+  })
+  if (referenceName) rows.push(["参考 Demo", referenceName])
+  return rows
 }
 
 // 最后一步「核对已填写的内容」里的纯文本摘要。藏起来的字段（条件不满足）不出现

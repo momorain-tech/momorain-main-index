@@ -1,5 +1,9 @@
 import {
+  CONTACT_GROUP,
+  CONTACT_KEYS,
+  CONTACT_TYPES,
   demandGroups,
+  migrateLegacyContact,
   providerGroups,
   workFields,
   type IntakeField,
@@ -20,6 +24,9 @@ export type Draft = {
   works: Values[]
   reference: string
   assets: Record<string, AssetMeta>
+  // 是否同意 AI 初评。2026-10 补的可选字段（旧草稿没有它，按「没同意」处理）：
+  // 以前不存，用户取消勾选 → 去登录 → 回来，勾选框又回到默认值，等于替用户改了主意
+  analysisConsent?: boolean
 }
 
 export const MAX_WORKS = 6
@@ -50,7 +57,8 @@ export function validateFields(fields: IntakeField[], data: Values, prefix = "")
       else if (f.required && !value) errors[prefix + f.key] = "请勾选确认"
       continue
     }
-    if (f.required && empty) errors[prefix + f.key] = `请填写${f.label}`
+    // 下拉是「选」不是「填」，提示语跟着变
+    if (f.required && empty) errors[prefix + f.key] = f.type === "select" ? `请选择${f.label}` : `请填写${f.label}`
     if (f.options && !empty) {
       const choices = Array.isArray(value) ? value : [value]
       if (choices.some((v) => !f.options!.includes(v)))
@@ -72,20 +80,58 @@ export function validateFields(fields: IntakeField[], data: Values, prefix = "")
   return errors
 }
 
+// 电话：先去掉空格、短横线、括号、点这些分隔符再判断，用户爱怎么写都行。
+// 支持三类：国内手机号（可带 +86 / 0086）、带区号的固定电话（可带分机）、400/800 热线；
+// 另外放过 + 开头的国际号码（E.164：+ 加 7—15 位数字）——第二版就允许带国家区号，不能收紧掉
+const MOBILE = /^(?:86)?1[3-9]\d{9}$/
+const LANDLINE = /^0\d{2,3}\d{7,8}(?:(?:转|ext\.?|x|#)\d{1,6})?$/i
+const HOTLINE = /^[48]00\d{7}$/
+const INTERNATIONAL = /^\+[1-9]\d{6,14}$/
+export function isPhone(input: string) {
+  const s = input.replace(/[\s\-().]/g, "")
+  // 写了 +86 / 0086 的，去掉国家码按国内号码判断（固定电话的区号前面那个 0 写不写都行）
+  const cn = /^(?:\+86|0086)(.+)$/.exec(s)
+  if (cn) return MOBILE.test(cn[1]) || LANDLINE.test("0" + cn[1].replace(/^0/, "")) || HOTLINE.test(cn[1])
+  return MOBILE.test(s) || LANDLINE.test(s) || HOTLINE.test(s) || INTERNATIONAL.test(s)
+}
+// 微信号的官方规则：6—20 位，字母开头，只能有字母、数字、下划线、减号。
+// 很多人的微信能用手机号搜到，所以也放过手机号（hint 里写了）
+const WECHAT_ID = /^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/
+export function isWechat(input: string) {
+  return WECHAT_ID.test(input) || MOBILE.test(input.replace(/[\s-]/g, "").replace(/^(?:\+86|0086)/, ""))
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// 单个联系方式的格式检查。空值不在这里管（「至少填一项」由 contactErrors 判断）
 export function validateContact(type: unknown, input: unknown): string | undefined {
   const contact = typeof input === "string" ? input.trim() : ""
-  if (!contact) return "请填写联系方式"
-  if (type === "邮箱")
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) ? undefined : "请填写有效的邮箱地址"
+  if (!contact) return undefined
+  if (contact.length > 100) return "太长了，请检查"
+  if (type === "邮箱") return EMAIL.test(contact) ? undefined : "邮箱格式不对，例如 name@example.com"
   if (type === "电话")
-    return /^\+?[\d\s()-]{6,25}$/.test(contact) && contact.replace(/\D/g, "").length >= 6
-      ? undefined
-      : "请填写有效的联系电话，可包含国家区号"
+    return isPhone(contact) ? undefined : "请填写有效的手机号，或带区号的固定电话（如 0571-88886666）"
   if (type === "微信")
-    return contact.length >= 2 && contact.length <= 100 && !/\s/.test(contact)
-      ? undefined
-      : "请填写可联系的微信号，不包含空格"
-  return "请选择联系方式类型"
+    return isWechat(contact) ? undefined : "微信号是 6—20 位字母、数字、下划线或减号，以字母开头；也可以填绑定微信的手机号"
+  return "联系方式类型无效"
+}
+
+// 联系方式的两类错误：
+// · 一项都没填 → 挂在整组上（键 = CONTACT_GROUP，表单把它显示在三个输入框上方并聚焦这一组）
+// · 填了但格式不对 → 挂在那一项自己身上
+// 表单的「下一步」、需求提交、服务方提交三处都走这一个函数
+export function contactErrors(values: Values): Record<string, string> {
+  const errors: Record<string, string> = {}
+  let filled = 0
+  for (const type of CONTACT_TYPES) {
+    const key = CONTACT_KEYS[type]
+    const v = values[key]
+    if (typeof v !== "string" || !v.trim()) continue
+    filled++
+    const error = validateContact(type, v)
+    if (error) errors[key] = error
+  }
+  if (!filled) errors[CONTACT_GROUP] = "电话、微信、邮箱至少填一项，方便平台联系你"
+  return errors
 }
 
 // 只保留「定义过、当前可见、非空」的字段，字符串去掉首尾空白。
@@ -133,11 +179,10 @@ export function validateDemandSubmission(body: unknown): { ok: true; value: Dema
   const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>
   const errors: Record<string, string> = {}
   if (!isRequestKey(b.requestKey)) errors.requestKey = "页面状态异常，请刷新后重试"
-  const values = isValues(b.values) ? b.values : {}
+  // 上线那一刻还开着旧页面的人，交上来的是旧格式（contactType + contact），先搬到新字段上
+  const values = isValues(b.values) ? migrateLegacyContact(b.values) : {}
   if (!isValues(b.values)) errors.values = "资料格式有误"
-  Object.assign(errors, validateFields(allDemandFields, values))
-  const contactError = validateContact(values.contactType, values.contact)
-  if (contactError) errors.contact = contactError
+  Object.assign(errors, validateFields(allDemandFields, values), contactErrors(values))
   if (b.consent !== true) errors.consent = "请确认资料用途"
   const reference = b.reference === undefined || b.reference === "" ? "" : b.reference
   if (reference !== "" && !isSlug(reference)) errors.reference = "参考作品无效"
@@ -175,11 +220,10 @@ export function validateProviderSubmission(body: unknown): { ok: true; value: Pr
   const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>
   const errors: Record<string, string> = {}
   if (!isRequestKey(b.requestKey)) errors.requestKey = "页面状态异常，请刷新后重试"
-  const values = isValues(b.values) ? b.values : {}
+  // 上线那一刻还开着旧页面的人，交上来的是旧格式（contactType + contact），先搬到新字段上
+  const values = isValues(b.values) ? migrateLegacyContact(b.values) : {}
   if (!isValues(b.values)) errors.values = "资料格式有误"
-  Object.assign(errors, validateFields(allProviderFields, values))
-  const contactError = validateContact(values.contactType, values.contact)
-  if (contactError) errors.contact = contactError
+  Object.assign(errors, validateFields(allProviderFields, values), contactErrors(values))
   const works = Array.isArray(b.works) ? b.works : []
   if (works.length < 1 || works.length > MAX_WORKS || !works.every(isValues))
     errors.works = `请整理 1—${MAX_WORKS} 个代表作品`
@@ -235,6 +279,7 @@ export function isDraft(input: unknown): input is Draft {
     d.works.every(isValues) &&
     typeof d.reference === "string" &&
     d.reference.length <= 100 &&
+    (d.analysisConsent === undefined || typeof d.analysisConsent === "boolean") &&
     !!assets &&
     typeof assets === "object" &&
     !Array.isArray(assets) &&

@@ -5,13 +5,21 @@ import type { PoolConnection, RowDataPacket } from "mysql2/promise"
 import { getPool } from "@/lib/db"
 import type { SessionUser } from "@/lib/auth"
 import { projectProvider } from "@/config/platform"
-import { CONSENT_VERSION } from "@/components/participation/intake-fields"
+import {
+  CONSENT_VERSION,
+  CONTACT_KEYS,
+  contactsOf,
+  isContactType,
+  type ContactEntry,
+} from "@/components/participation/intake-fields"
 import type { DemandSubmission, ProviderSubmission, Values } from "@/lib/intake-validation"
 import { enqueueAnalysis } from "@/lib/intake/analysis"
 import { newId } from "@/lib/intake/http"
 import {
   APPLICATION_STATUSES,
   DEPLOY_STATUSES,
+  REQUEST_FOLLOWING,
+  REQUEST_SEARCH_MAX,
   REQUEST_STATUSES,
   type AnalysisResult,
   type AnalysisStatus,
@@ -422,32 +430,108 @@ export async function takeAbandonedAssets(): Promise<string[]> {
 export type AdminListParams = { status?: string; page: number }
 export const ADMIN_PAGE_SIZE = 30
 
+// 需求列表的筛选条件。status 除了五个具体状态，还认一个分组值 "following"（= REQUEST_FOLLOWING）；
+// contactType = 「留了这种联系方式」（电话 / 微信 / 邮箱）
+export type AdminRequestQuery = AdminListParams & { q?: string; contactType?: string }
+
+// 联系方式在 JSON 里的位置。新记录是 phone / wechat / email 三个键，旧记录是 contactType + contact
+// （见 intake-fields.ts 的 contactsOf）。SQL 里取出这五列，回到 Node 再用 contactsOf 合成一个列表
+// col 是 JSON 列，base 是资料对象在 JSON 里的路径：需求是 payload_json 的 $.values，服务申请是 profile_json 的 $
+const contactColumns = (col: string, base: string) =>
+  (
+    [
+      ["phone", "c_phone"],
+      ["wechat", "c_wechat"],
+      ["email", "c_email"],
+      ["contactType", "c_type"],
+      ["contact", "c_value"],
+    ] as const
+  )
+    .map(([key, alias]) => `JSON_UNQUOTE(JSON_EXTRACT(${col}, '${base}.${key}')) AS ${alias}`)
+    .join(",\n            ")
+const contactsFromRow = (r: RowDataPacket): ContactEntry[] =>
+  contactsOf({
+    phone: r.c_phone ?? undefined,
+    wechat: r.c_wechat ?? undefined,
+    email: r.c_email ?? undefined,
+    contactType: r.c_type ?? undefined,
+    contact: r.c_value ?? undefined,
+  })
+
+// LIKE 里 % 和 _ 是通配符，用户搜「100%」时要转义成普通字符（MySQL 默认的转义符是反斜杠）
+const escapeLike = (s: string) => s.replace(/[\\%_]/g, "\\$&")
+
+// 关键词在这几处里找：需求名称、问题、期望结果、称呼、三种联系方式（含旧格式的 contact）、公司名。
+// 都是 JSON 里取出来的字符串，MySQL 给它们的排序规则是 utf8mb4_bin（区分大小写），
+// 所以两边都 LOWER() 一下，搜「Wang」也能找到「wang_123」。
+// 每一列**单独**和参数比较，不拼成一个长字符串——不同排序规则的列拼在一起会报「Illegal mix of collations」
+const SEARCH_COLUMNS = [
+  "r.title",
+  ...["problem", "outcome", "name", "phone", "wechat", "email", "contact", "company"].map(
+    (k) => `JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.${k}'))`,
+  ),
+]
+
+// 把筛选条件翻译成 WHERE。列表和总数共用这一份，保证「第 N 页」和「共 M 条」是同一个集合。
+// 全部用占位符传值，用户输入不会拼进 SQL
+function requestWhere(p: AdminRequestQuery): { sql: string; args: string[] } {
+  const conds: string[] = []
+  const args: string[] = []
+  if (p.status === "following") {
+    conds.push(`r.status IN (${REQUEST_FOLLOWING.map(() => "?").join(", ")})`)
+    args.push(...REQUEST_FOLLOWING)
+  } else if (REQUEST_STATUSES.includes(p.status as RequestStatus)) {
+    conds.push("r.status = ?")
+    args.push(p.status as string)
+  }
+  if (isContactType(p.contactType)) {
+    // 新记录：对应的键存在（空值在入库前已被 normalizeValues 去掉，所以「存在」= 填了）；
+    // 旧记录：contactType 等于这种类型
+    conds.push(
+      `(JSON_EXTRACT(r.payload_json, '$.values.${CONTACT_KEYS[p.contactType]}') IS NOT NULL
+        OR JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.contactType')) = ?)`,
+    )
+    args.push(p.contactType)
+  }
+  const q = p.q?.trim().slice(0, REQUEST_SEARCH_MAX)
+  if (q) {
+    const like = `%${escapeLike(q.toLowerCase())}%`
+    // 编号精确匹配（管理员常常是从回执里复制编号来查）+ 各列模糊匹配
+    conds.push(`(r.id = ? OR ${SEARCH_COLUMNS.map((c) => `LOWER(${c}) LIKE ?`).join(" OR ")})`)
+    args.push(q, ...SEARCH_COLUMNS.map(() => like))
+  }
+  return { sql: conds.length ? `WHERE ${conds.join(" AND ")}` : "", args }
+}
+
 export type AdminRequestRow = {
   id: string
   title: string
+  // 「想解决的问题」的开头，列表里放在标题下面，不用点进去也能大致知道是什么需求
+  summary: string
   name: string
-  contactType: string
-  contact: string
+  // 用户留下的全部联系方式（列表页脱敏显示）
+  contacts: ContactEntry[]
   status: RequestStatus
   analysisStatus: AnalysisStatus
   assigneeName: string | null
   createdAt: string
 }
-export async function adminListRequests(p: AdminListParams): Promise<{ rows: AdminRequestRow[]; total: number }> {
-  const where = REQUEST_STATUSES.includes(p.status as RequestStatus) ? "WHERE r.status = ?" : ""
-  const args: string[] = where && p.status ? [p.status] : []
+export async function adminListRequests(p: AdminRequestQuery): Promise<{ rows: AdminRequestRow[]; total: number }> {
+  const { sql: where, args } = requestWhere(p)
   const pool = getPool()
-  const [[count]] = await pool.execute<RowDataPacket[]>(`SELECT COUNT(*) AS n FROM intake_requests r ${where}`, args)
-  // 列表里 AI 状态取「最新任务」的，没有任务就用提交时记下的决定
+  // 用 query 不用 execute：LIMIT ? 在 mysql2 的预处理语句里对参数类型很挑剔，query 在客户端转义，同样安全
+  const [[count]] = await pool.query<RowDataPacket[]>(`SELECT COUNT(*) AS n FROM intake_requests r ${where}`, args)
+  // 列表里 AI 状态取「最新任务」的，没有任务就用提交时记下的决定。
+  // 排序加上 id 做第二关键字：同一秒提交的两条，翻页时顺序固定，不会一条出现两次、一条消失
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT r.id, r.title, r.status, r.analysis_status, r.assignee_name, r.created_at,
+            LEFT(JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.problem')), 80) AS summary,
             JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.name')) AS name,
-            JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.contactType')) AS contact_type,
-            JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.contact')) AS contact,
+            ${contactColumns("r.payload_json", "$.values")},
             (SELECT j.status FROM ai_analysis_jobs j WHERE j.request_id = r.id AND j.request_version = r.version
              ORDER BY j.id DESC LIMIT 1) AS job_status
      FROM intake_requests r ${where}
-     ORDER BY r.created_at DESC LIMIT ? OFFSET ?`,
+     ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ?`,
     [...args, ADMIN_PAGE_SIZE, (p.page - 1) * ADMIN_PAGE_SIZE],
   )
   return {
@@ -455,15 +539,34 @@ export async function adminListRequests(p: AdminListParams): Promise<{ rows: Adm
     rows: rows.map((r) => ({
       id: r.id,
       title: r.title,
+      summary: (r.summary ?? "").replace(/\s+/g, " "),
       name: r.name ?? "",
-      contactType: r.contact_type ?? "",
-      contact: r.contact ?? "",
+      contacts: contactsFromRow(r),
       status: r.status,
       analysisStatus: r.job_status ?? r.analysis_status,
       assigneeName: r.assignee_name,
       createdAt: iso(r.created_at),
     })),
   }
+}
+
+// 需求列表顶部的四个数。**不受筛选影响**，永远是全表：
+// 累计 = 所有需求（含已关闭）；待处理 = 已接收还没人动；跟进中 = REQUEST_FOLLOWING；
+// 提交用户数 = 提交过需求的不同账号数。所以「累计 = 待处理 + 跟进中 + 已关闭」
+export type RequestStats = { total: number; pending: number; following: number; closed: number; users: number }
+export async function adminRequestStats(): Promise<RequestStats> {
+  // SUM(条件) 在 MySQL 里是「满足条件的行数」；表是空的时 SUM 返回 NULL，所以包一层 COALESCE
+  const [[r]] = await getPool().query<RowDataPacket[]>(
+    `SELECT COUNT(*) AS total,
+            COALESCE(SUM(status = 'received'), 0) AS pending,
+            COALESCE(SUM(status IN (?)), 0) AS following,
+            COALESCE(SUM(status = 'closed'), 0) AS closed,
+            COUNT(DISTINCT owner_id) AS users
+     FROM intake_requests`,
+    [REQUEST_FOLLOWING],
+  )
+  // SUM 的结果是 DECIMAL，mysql2 会给字符串，统一转成数字
+  return { total: Number(r.total), pending: Number(r.pending), following: Number(r.following), closed: Number(r.closed), users: Number(r.users) }
 }
 
 export type IntakeEvent = { id: number; actorName: string | null; eventType: string; note: string | null; createdAt: string }
@@ -595,8 +698,7 @@ export type AdminApplicationRow = {
   id: string
   displayName: string
   name: string
-  contactType: string
-  contact: string
+  contacts: ContactEntry[]
   status: ApplicationStatus
   works: number
   assigneeName: string | null
@@ -610,8 +712,7 @@ export async function adminListApplications(p: AdminListParams): Promise<{ rows:
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, display_name, review_status, assignee_name, created_at, JSON_LENGTH(works_json) AS works,
             JSON_UNQUOTE(JSON_EXTRACT(profile_json, '$.name')) AS name,
-            JSON_UNQUOTE(JSON_EXTRACT(profile_json, '$.contactType')) AS contact_type,
-            JSON_UNQUOTE(JSON_EXTRACT(profile_json, '$.contact')) AS contact
+            ${contactColumns("profile_json", "$")}
      FROM provider_applications ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     [...args, ADMIN_PAGE_SIZE, (p.page - 1) * ADMIN_PAGE_SIZE],
   )
@@ -621,8 +722,7 @@ export async function adminListApplications(p: AdminListParams): Promise<{ rows:
       id: r.id,
       displayName: r.display_name,
       name: r.name ?? "",
-      contactType: r.contact_type ?? "",
-      contact: r.contact ?? "",
+      contacts: contactsFromRow(r),
       status: r.review_status,
       works: Number(r.works),
       assigneeName: r.assignee_name,

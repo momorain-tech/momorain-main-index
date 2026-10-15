@@ -919,3 +919,49 @@
 @media (max-width: 480px) {
   .jk .intake-receipt dl, .jk .receipt-meta { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ── 需求提交页（2026-10 第三版完善）：左表单 + 右填写帮助 ──────────────────
+   只加在 .request-page 上，服务方页 /providers/join 仍是原来的单列 800px */
+.jk .participation-page.request-page { max-width: 1120px; }
+.jk .request-page > header { max-width: 760px; }
+.jk .request-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; }
+/* 帮助栏跟着页面滚动时停在导航下面（导航 64px 高 + 留白）；内容比屏幕高时就不粘了，免得下半截永远看不到 */
+.jk .request-help { position: sticky; top: 88px; display: flex; flex-direction: column; gap: var(--jk-gap); margin-top: 20px; }
+@media (max-height: 760px) { .jk .request-help { position: static; } }
+.jk .request-help > section { border: 1px solid var(--jk-card-border); background: var(--jk-card); border-radius: var(--jk-radius); padding: var(--jk-pad-sm); font-size: 13.5px; color: var(--jk-text-2); line-height: 1.7; }
+.jk .request-help h2 { font-size: 15px; font-weight: 700; color: var(--jk-text); margin-bottom: 8px; }
+.jk .request-help-muted { margin-top: 10px; font-size: 12.5px; color: var(--jk-text-3); }
+.jk .request-example { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.jk .request-example > div { border-left: 3px solid var(--jk-accent-soft-border); background: var(--jk-accent-soft-bg); border-radius: 0 8px 8px 0; padding: 8px 12px; }
+.jk .request-example dt { font-size: 12px; font-weight: 600; color: var(--jk-accent-soft-text); }
+.jk .request-example dd { margin: 2px 0 0; color: var(--jk-text); }
+/* 编号用 CSS 计数器画成小圆圈，和表单顶部的步骤圆圈同一个样子 */
+.jk .request-steps { list-style: none; padding: 0; margin: 0; counter-reset: step; display: flex; flex-direction: column; gap: 10px; }
+.jk .request-steps li { counter-increment: step; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
+.jk .request-steps li::before { content: counter(step); display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--jk-accent-soft-bg); color: var(--jk-accent-soft-text); font-size: 12px; font-weight: 700; margin-top: 1px; }
+
+/* 联系方式：电话、微信、邮箱三个输入框归成一组（fieldset），至少填一项。
+   组里的输入框间距比普通字段小一些，看起来是「一件事的三个格子」而不是三道题 */
+.jk .intake-contacts { border-left: 3px solid var(--jk-accent-soft-border); padding-left: 16px; }
+.jk .intake-contacts[aria-invalid=true] { border-left-color: var(--jk-red-text); }
+.jk .intake-contacts > .field-error { margin: 0 0 10px; }
+.jk .intake-contacts .intake-field { margin-bottom: 14px; }
+.jk .intake-contacts > div:last-child .intake-field { margin-bottom: 0; }
+.jk .intake-contacts .intake-field > label { display: flex; align-items: center; gap: 6px; font-weight: 500; margin-bottom: 6px; }
+.jk .intake-contacts .intake-field > label svg { color: var(--jk-text-3); flex-shrink: 0; }
+
+/* 第二步「核对需求」：直接摊开的卡片，右上角「返回修改」 */
+.jk .intake-review { border: 1px solid var(--jk-card-border); border-radius: 12px; background: var(--jk-card); padding: 18px var(--jk-pad-sm) 8px; margin-top: 8px; }
+.jk .intake-review-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.jk .intake-review-head h3 { font-size: 15px; font-weight: 700; }
+.jk .intake-review-head .intake-text-button { display: inline-flex; align-items: center; gap: 4px; }
+.jk .intake-review dl > div { padding: 10px 0; border-top: 1px solid var(--jk-card-border); }
+.jk .intake-review dl > div:first-child { border-top: 0; }
+.jk .intake-review dt { font-size: 12.5px; color: var(--jk-text-3); margin: 0; letter-spacing: 0; }
+.jk .intake-review dd { margin: 2px 0 0; font-size: 14.5px; color: var(--jk-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 900px) {
+  /* 手机和窄屏：单列，帮助排到表单下面；不再 sticky */
+  .jk .request-layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .jk .request-help { position: static; margin-top: 0; }
+}

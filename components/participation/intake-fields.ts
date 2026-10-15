@@ -13,6 +13,15 @@ export type IntakeField = {
   type?: "text" | "textarea" | "select" | "multi" | "url" | "check"
   required?: boolean
   hint?: string
+  // 输入框里的灰色示例。只放「写成什么样」的例子，不放规则——规则写在 hint 里，
+  // 因为一开始输入 placeholder 就消失了，用户会忘
+  placeholder?: string
+  // 手机键盘类型和浏览器自动填充。目前只有联系方式的三个输入框用
+  inputMode?: "tel" | "email" | "text" | "url"
+  autoComplete?: string
+  // 「几项里至少填一项」的分组名。同组字段在表单里包进一个 fieldset，各自选填，
+  // 由 lib/intake-validation.ts 的 contactErrors() 检查「至少一项」
+  oneOf?: string
   options?: string[]
   max?: number
   // 最少字数。只用在「问题 / 期望结果」这种说一句「想用 AI」等于没说的地方
@@ -26,28 +35,87 @@ export type IntakeField = {
 }
 export type IntakeGroup = { title: string; description: string; fields: IntakeField[] }
 
-export const CONTACT_TYPES = ["微信", "电话", "邮箱"]
+// ─── 联系方式：电话、微信、邮箱三个输入框，至少填一个 ─────────────────
+// 2026-10-15 前是「选一种类型（contactType）+ 填一个值（contact）」；现在改成三个独立字段，
+// 用户想留几个就留几个，后台照着填了的那几种联系。旧记录在数据库里仍是 contactType + contact，
+// 读的时候一律走 contactsOf()，新旧两种格式都认，**不需要迁移数据**。
+//
+// ⚠️ 下面的 type（电话/微信/邮箱）就是旧记录里 contactType 存的值，不能改字
+export const CONTACT_TYPES = ["电话", "微信", "邮箱"] as const
+export type ContactType = (typeof CONTACT_TYPES)[number]
+export function isContactType(v: unknown): v is ContactType {
+  return typeof v === "string" && (CONTACT_TYPES as readonly string[]).includes(v)
+}
+// 三个字段在表单里归成一组（oneOf: "contacts"），组的报错挂在这个键上
+export const CONTACT_GROUP = "contacts"
+export const CONTACT_KEYS: Record<ContactType, string> = { 电话: "phone", 微信: "wechat", 邮箱: "email" }
+
 const contactFields: IntakeField[] = [
   {
-    key: "contactType",
-    label: "联系方式类型",
-    type: "select",
-    required: true,
-    options: CONTACT_TYPES,
+    key: "phone",
+    label: "电话",
+    max: 100,
+    oneOf: CONTACT_GROUP,
+    placeholder: "手机号，或带区号的固定电话，如 0571-8888 6666",
+    // 手机上 tel 弹拨号盘、email 弹带 @ 的键盘；autoComplete 让浏览器能自动填入自己的号码 / 邮箱
+    inputMode: "tel",
+    autoComplete: "tel",
   },
   {
-    key: "contact",
-    label: "联系方式",
-    required: true,
+    key: "wechat",
+    label: "微信",
     max: 100,
-    hint: "仅用于平台和你对接，不公开展示，也不会发给 AI 模型。",
+    oneOf: CONTACT_GROUP,
+    placeholder: "能搜到、能加好友的微信号，或绑定微信的手机号",
+    inputMode: "text",
+    autoComplete: "off",
+  },
+  {
+    key: "email",
+    label: "邮箱",
+    max: 100,
+    oneOf: CONTACT_GROUP,
+    placeholder: "name@example.com",
+    inputMode: "email",
+    autoComplete: "email",
   },
 ]
+// 组的标题和说明（FieldList 把 oneOf 相同的字段包进一个 fieldset，用这里的文字）
+export const CONTACT_GROUP_TEXT = {
+  legend: "联系方式",
+  hint: "电话、微信、邮箱至少填一项，填了的平台都可能用来联系你，和登录用的手机号无关。只用于对接，不公开展示，也不会发给 AI 模型。",
+}
+
+type RawValues = Record<string, string | string[] | undefined>
+export type ContactEntry = { type: ContactType; value: string }
+// 一条记录里留下的全部联系方式，按 电话 → 微信 → 邮箱 排。新旧格式都认：
+// 新格式读 phone / wechat / email；旧格式读 contactType + contact（只有一种）
+export function contactsOf(v: RawValues | null | undefined): ContactEntry[] {
+  if (!v) return []
+  const out: ContactEntry[] = []
+  for (const type of CONTACT_TYPES) {
+    const value = v[CONTACT_KEYS[type]]
+    if (typeof value === "string" && value.trim()) out.push({ type, value: value.trim() })
+  }
+  if (!out.length && isContactType(v.contactType) && typeof v.contact === "string" && v.contact.trim())
+    out.push({ type: v.contactType, value: v.contact.trim() })
+  return out
+}
+// 把旧格式（contactType + contact）搬到对应的新字段上。两个地方用：
+// 1) 恢复上线前存下的本地草稿，不让用户填过的联系方式凭空消失；
+// 2) 服务端接收——上线那一刻还开着旧页面的人提交上来的仍是旧格式，照样能收
+export function migrateLegacyContact<T extends RawValues>(values: T): T {
+  const { contactType, contact } = values
+  if (!isContactType(contactType) || typeof contact !== "string") return values
+  const { contactType: _t, contact: _c, ...rest } = values
+  const key = CONTACT_KEYS[contactType]
+  return { ...rest, [key]: typeof rest[key] === "string" && (rest[key] as string).trim() ? rest[key] : contact } as T
+}
 
 // ─── 需求方：两步 ───────────────────────────────────────────────
 export const demandGroups: IntakeGroup[] = [
   {
-    title: "需求与结果",
+    title: "描述需求",
     description: "不用先懂技术，把现在的问题和希望得到的结果说清楚就好。",
     fields: [
       {
@@ -58,6 +126,7 @@ export const demandGroups: IntakeGroup[] = [
         min: 10,
         max: 2000,
         hint: "现在最麻烦、最耗时，或者一直做不好的事情是什么？谁在做、大概怎么做的？",
+        placeholder: "例如：每周要把 20 多个内部培训视频整理成图文教程，现在靠两个人手工截图、写说明，一个视频要花半天。",
       },
       {
         key: "outcome",
@@ -67,6 +136,7 @@ export const demandGroups: IntakeGroup[] = [
         min: 10,
         max: 2000,
         hint: "完成以后，希望能看到、使用或交付什么？",
+        placeholder: "例如：上传视频后自动生成带截图的分步教程，可以导出 Word，我们再人工改改就能发给学员。",
       },
       {
         key: "title",
@@ -96,14 +166,15 @@ export const demandGroups: IntakeGroup[] = [
         max: 2000,
         extra: true,
         hint: "用了什么工具、经过哪些步骤？",
+        placeholder: "例如：剪映截图 → 复制到 Word → 手写步骤说明 → 发群里",
       },
-      { key: "budget", label: "预算范围", max: 200, extra: true, hint: "可以写「待评估」" },
-      { key: "timeline", label: "期望时间", max: 200, extra: true, hint: "可以写「不着急」" },
+      { key: "budget", label: "预算范围", max: 200, extra: true, hint: "可以写「待评估」", placeholder: "例如：1 万以内 / 待评估" },
+      { key: "timeline", label: "期望时间", max: 200, extra: true, hint: "可以写「不着急」", placeholder: "例如：月底前先看到样例 / 不着急" },
     ],
   },
   {
-    title: "联系方式与确认",
-    description: "平台收到后由专人跟进，联系方式只用于对接。",
+    title: "联系与确认",
+    description: "留下至少一种联系方式，核对一遍需求就可以提交了。",
     fields: [{ key: "name", label: "怎么称呼你", required: true, max: 50 }, ...contactFields],
   },
 ]

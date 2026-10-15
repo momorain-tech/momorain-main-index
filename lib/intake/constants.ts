@@ -23,6 +23,12 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   waiting_customer: "等待对方补充",
   closed: "已关闭",
 }
+// 「跟进中」= 已经有人在看、还没关闭的三个状态。后台统计卡和筛选里的「跟进中」都按这一组算，
+// 两边口径一致：点统计卡进去看到的条数 = 卡片上的数字
+export const REQUEST_FOLLOWING: readonly RequestStatus[] = ["reviewing", "contacting", "waiting_customer"]
+// 后台需求搜索的关键词长度上限
+export const REQUEST_SEARCH_MAX = 50
+
 // 提交者看的标签：站在对方角度说话
 export const REQUEST_STATUS_PUBLIC: Record<RequestStatus, string> = {
   received: "已收到，等待平台跟进",

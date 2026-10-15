@@ -10,8 +10,8 @@ import {
   formatTime,
 } from "@/lib/intake/constants"
 import { adminGetApplication } from "@/lib/intake/store"
-import { providerGroups, workFields } from "@/components/participation/intake-fields"
-import { EventList, KV, Notice, intakeUnavailable } from "@/components/admin/intake-shared"
+import { contactsOf, providerGroups, workFields } from "@/components/participation/intake-fields"
+import { ContactList, EventList, KV, Notice, intakeUnavailable } from "@/components/admin/intake-shared"
 import { DeploymentForm, IntakeFollowup } from "@/components/admin/intake-followup"
 
 // 服务申请详情：资料、每个作品的附件与部署工单、审核表单、操作记录。
@@ -32,7 +32,8 @@ export default async function AdminIntakeProviderPage({ params }: PageProps) {
   }
   if (!r) notFound()
   const me = await getCurrentUser()
-  const fields = providerGroups.flatMap((g) => g.fields)
+  // 联系方式三项不逐个列，合成一行用 ContactList 显示（旧记录是 contactType + contact，也靠它显示）
+  const fields = providerGroups.flatMap((g) => g.fields).filter((f) => !f.oneOf)
 
   return (
     <div className="space-y-6">
@@ -53,6 +54,12 @@ export default async function AdminIntakeProviderPage({ params }: PageProps) {
           {fields.map((f) => (
             <KV key={f.key} label={f.label} value={r.profile[f.key]} />
           ))}
+          <div className="grid grid-cols-[8rem_1fr] gap-3 py-1.5 text-sm">
+            <dt className="text-muted-foreground">联系方式</dt>
+            <dd className="break-words">
+              <ContactList contacts={contactsOf(r.profile)} />
+            </dd>
+          </div>
           <KV label="同意书版本" value={r.consentVersion} />
           <KV label="提交账号" value={r.ownerId} />
         </dl>

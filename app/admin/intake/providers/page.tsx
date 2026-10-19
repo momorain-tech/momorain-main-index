@@ -1,9 +1,9 @@
 import Link from "next/link"
 
 import { isDbConfigured } from "@/lib/db"
-import { APPLICATION_STATUSES, APPLICATION_STATUS_LABELS, formatTime, maskContact } from "@/lib/intake/constants"
+import { APPLICATION_STATUSES, APPLICATION_STATUS_LABELS, formatTime } from "@/lib/intake/constants"
 import { ADMIN_PAGE_SIZE, adminListApplications, adminPendingCounts } from "@/lib/intake/store"
-import { IntakeTabs, Notice, Pager, StatusFilter, intakeUnavailable, pageParam } from "@/components/admin/intake-shared"
+import { ContactList, IntakeTabs, Notice, Pager, StatusFilter, intakeUnavailable, pageParam } from "@/components/admin/intake-shared"
 
 // 服务申请审核队列。审核通过 ≠ 自动公开：公开作品仍在「项目管理」里录入并过发布检查
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> }
@@ -53,9 +53,9 @@ export default async function AdminIntakeProvidersPage({ searchParams }: PagePro
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     {r.name}
-                    <p className="text-xs text-muted-foreground">
-                      {r.contactType} {maskContact(r.contact)}
-                    </p>
+                    <div className="mt-0.5 text-xs">
+                      <ContactList contacts={r.contacts} masked />
+                    </div>
                   </td>
                   <td className="px-4 py-3">{r.works}</td>
                   <td className="whitespace-nowrap px-4 py-3">{APPLICATION_STATUS_LABELS[r.status]}</td>
@@ -67,7 +67,7 @@ export default async function AdminIntakeProvidersPage({ searchParams }: PagePro
           </table>
         </div>
       )}
-      <Pager base="/admin/intake/providers" page={page} total={data.total} size={ADMIN_PAGE_SIZE} status={status} />
+      <Pager base="/admin/intake/providers" page={page} total={data.total} size={ADMIN_PAGE_SIZE} query={{ status }} />
     </div>
   )
 }

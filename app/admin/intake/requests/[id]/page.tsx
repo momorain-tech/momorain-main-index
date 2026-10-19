@@ -11,17 +11,30 @@ import {
   formatTime,
 } from "@/lib/intake/constants"
 import { adminGetRequest } from "@/lib/intake/store"
-import { demandGroups } from "@/components/participation/intake-fields"
+import { contactsOf, demandGroups } from "@/components/participation/intake-fields"
 import { AnalysisBlock } from "@/components/participation/receipt-view"
-import { EventList, KV, Notice, intakeUnavailable } from "@/components/admin/intake-shared"
+import {
+  ContactList,
+  EventList,
+  KV,
+  Notice,
+  filtersQuery,
+  intakeUnavailable,
+  requestFilters,
+} from "@/components/admin/intake-shared"
 import { IntakeFollowup, RequeueAnalysisButton } from "@/components/admin/intake-followup"
 
-// 需求详情：完整资料（含联系方式）、AI 初评、跟进表单、操作记录
-type PageProps = { params: Promise<{ id: string }> }
+// 需求详情，按「需求内容 → 联系资料 → 跟进」分区，下面是 AI 初评和操作记录。
+// 联系方式在这里显示完整值（列表里是脱敏的）。地址栏里带着列表页的筛选条件，只用来拼「返回列表」
+type PageProps = {
+  params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
-export default async function AdminIntakeRequestPage({ params }: PageProps) {
-  if (!isDbConfigured()) return <Notice>本地未配置数据库，资料接收后台不可用。</Notice>
+export default async function AdminIntakeRequestPage({ params, searchParams }: PageProps) {
+  if (!isDbConfigured()) return <Notice>本地未配置数据库，用户需求后台不可用。</Notice>
   const { id } = await params
+  const back = `/admin/intake/requests${filtersQuery(requestFilters(await searchParams))}`
   let r
   try {
     r = await adminGetRequest(id)
@@ -30,14 +43,15 @@ export default async function AdminIntakeRequestPage({ params }: PageProps) {
   }
   if (!r) notFound()
   const me = await getCurrentUser()
-  const fields = demandGroups.flatMap((g) => g.fields)
+  // 第一步的字段 = 需求内容，第二步的字段 = 称呼和联系方式（见 intake-fields.ts 的 demandGroups）
+  const contentFields = demandGroups[0].fields
   const a = r.analysis
   const canRequeue = !!aiConfig() && !["queued", "running"].includes(a.status)
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/intake/requests" className="text-sm text-muted-foreground hover:text-foreground">
-        ← 需求列表
+      <Link href={back} className="text-sm text-muted-foreground hover:text-foreground">
+        ← 返回需求列表
       </Link>
       <div>
         <h2 className="text-xl font-semibold">{r.title}</h2>
@@ -48,15 +62,45 @@ export default async function AdminIntakeRequestPage({ params }: PageProps) {
       </div>
 
       <section className="rounded-lg border p-4">
-        <h3 className="mb-2 font-medium">需求资料</h3>
+        <h3 className="mb-2 font-medium">需求内容</h3>
         <dl>
-          {fields.map((f) => (
+          {contentFields.map((f) => (
             <KV key={f.key} label={f.label} value={r.values[f.key]} />
           ))}
           <KV label="参考作品" value={r.reference ? `${r.reference.name}（${r.reference.slug}）${r.reference.provider ? ` · ${r.reference.provider}` : ""}` : null} />
-          <KV label="同意书版本" value={`${r.consentVersion}${r.analysisConsent ? " · 同意 AI 初评" : " · 未同意 AI 初评"}`} />
-          <KV label="提交账号" value={r.ownerId} />
         </dl>
+      </section>
+
+      <section className="rounded-lg border p-4">
+        <h3 className="mb-2 font-medium">联系资料</h3>
+        <dl>
+          <KV label="称呼" value={r.values.name} />
+          <div className="grid grid-cols-[8rem_1fr] gap-3 py-1.5 text-sm">
+            <dt className="text-muted-foreground">联系方式</dt>
+            <dd className="break-words">
+              <ContactList contacts={contactsOf(r.values)} />
+            </dd>
+          </div>
+          <KV label="提交账号" value={r.ownerId} />
+          <KV label="同意书版本" value={`${r.consentVersion}${r.analysisConsent ? " · 同意 AI 初评" : " · 未同意 AI 初评"}`} />
+        </dl>
+        <p className="mt-2 text-xs text-muted-foreground">
+          用户留了哪几种就可以用哪几种联系。这些是用户自己填的，和登录手机号无关；完整联系方式只在这一页显示，不要转发到群里。
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h3 className="font-medium">跟进</h3>
+        <p className="text-xs text-muted-foreground">负责人、状态、给用户的说明（用户在进度页能看到）和内部备注，一次保存。</p>
+        <IntakeFollowup
+          endpoint={`/api/admin/intake/requests/${r.id}`}
+          version={r.version}
+          status={r.status}
+          statuses={REQUEST_STATUSES.map((s) => ({ value: s, label: REQUEST_STATUS_LABELS[s] }))}
+          customerNote={r.customerNote ?? ""}
+          assignedToMe={!!me && r.assigneeId === me.userId}
+          hasAssignee={!!r.assigneeId}
+        />
       </section>
 
       <section className="rounded-lg border p-4">
@@ -82,19 +126,6 @@ export default async function AdminIntakeRequestPage({ params }: PageProps) {
           </p>
         )}
         {a.result && <AnalysisBlock result={a.result} />}
-      </section>
-
-      <section className="space-y-2">
-        <h3 className="font-medium">跟进</h3>
-        <IntakeFollowup
-          endpoint={`/api/admin/intake/requests/${r.id}`}
-          version={r.version}
-          status={r.status}
-          statuses={REQUEST_STATUSES.map((s) => ({ value: s, label: REQUEST_STATUS_LABELS[s] }))}
-          customerNote={r.customerNote ?? ""}
-          assignedToMe={!!me && r.assigneeId === me.userId}
-          hasAssignee={!!r.assigneeId}
-        />
       </section>
 
       <section className="space-y-2">

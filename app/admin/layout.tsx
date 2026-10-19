@@ -46,7 +46,7 @@ export default async function AdminLayout({
 
       {/* 模块导航。不做「高亮当前项」——那需要 usePathname，
           会把这个 layout 变成客户端组件，为一点视觉反馈不值得 */}
-      <nav className="mb-6 flex gap-4 text-sm">
+      <nav className="mb-6 flex flex-wrap gap-x-4 gap-y-2 text-sm">
         <Link href="/admin" className="text-muted-foreground hover:text-foreground">
           总览
         </Link>
@@ -56,8 +56,13 @@ export default async function AdminLayout({
         <Link href="/admin/projects" className="text-muted-foreground hover:text-foreground">
           项目管理
         </Link>
-        <Link href="/admin/intake" className="text-muted-foreground hover:text-foreground">
-          资料接收
+        {/* 原来是一个「资料接收」入口，点进去默认是需求、服务申请要再切一次标签。
+            用户需求是每天要看的，单独拿出来；/admin/intake 仍然可用（会跳到需求列表） */}
+        <Link href="/admin/intake/requests" className="text-muted-foreground hover:text-foreground">
+          用户需求
+        </Link>
+        <Link href="/admin/intake/providers" className="text-muted-foreground hover:text-foreground">
+          服务申请
         </Link>
       </nav>
 

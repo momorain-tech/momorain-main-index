@@ -28,6 +28,8 @@ import { contactsOf } from "./intake-fields"
 
 type RequestView = {
   id: string
+  // 轻量咨询（第四版）和完整需求共用这个进度页；老版本接口没有这个字段 = 完整需求
+  kind?: "demand" | "consult"
   title: string
   status: RequestStatus
   customerNote: string | null
@@ -122,7 +124,7 @@ export function ReceiptView({ kind, id }: { kind: "request" | "application"; id:
   if (load.state === "error")
     return (
       <div className="receipt-box" role="alert">
-        <p>暂时读取不到进度，请稍后刷新。资料已经保存在平台，不会因此丢失。</p>
+        <p>暂时读取不到进度，请稍后刷新。资料已经保存在后台，不会因此丢失。</p>
       </div>
     )
 
@@ -162,7 +164,7 @@ function CustomerNote({ note }: { note: string | null }) {
   if (!note) return null
   return (
     <div className="receipt-note" role="note">
-      <b>平台留言</b>
+      <b>团队留言</b>
       <p>{note}</p>
     </div>
   )
@@ -176,7 +178,7 @@ function RequestReceipt({ data, gaveUp }: { data: RequestView; gaveUp: boolean }
       <Meta id={data.id} createdAt={data.createdAt} updatedAt={data.updatedAt} status={REQUEST_STATUS_PUBLIC[data.status]} />
       <CustomerNote note={data.customerNote} />
 
-      <section className="receipt-section">
+      {data.kind !== "consult" && <section className="receipt-section">
         <h2>AI 初评</h2>
         <p className="receipt-muted">
           {ANALYSIS_STATUS_LABELS[a.status]}
@@ -185,13 +187,17 @@ function RequestReceipt({ data, gaveUp }: { data: RequestView; gaveUp: boolean }
         </p>
         {a.status === "succeeded" && a.result && <AnalysisBlock result={a.result} />}
         <p className="field-hint">
-          AI 初评只是帮助平台更快理解需求的参考，不是报价、工期或合作承诺；平台会人工跟进。
+          AI 初评只是帮助团队更快理解需求的参考，不是报价、工期或合作承诺；团队会人工跟进。
         </p>
-      </section>
+      </section>}
 
       <section className="receipt-section">
         <h2>你提交的内容</h2>
         <dl className="receipt-values">
+          {/* 轻量咨询（第四版首页）只有这三项 */}
+          {data.values.scene && <Row label="想处理什么" value={data.values.scene} />}
+          {data.values.stage && <Row label="目前到哪一步" value={data.values.stage} />}
+          {data.values.note && <Row label="补充说明" value={data.values.note} />}
           {data.values.problem && <Row label="想解决的问题" value={data.values.problem} />}
           {data.values.outcome && <Row label="期望结果" value={data.values.outcome} />}
           {data.reference && <Row label="参考作品" value={data.reference.name} />}
@@ -232,7 +238,7 @@ export function AnalysisBlock({ result, projectHref = true }: { result: Analysis
       )}
       {result.relatedProjectSlugs.length > 0 && (
         <div className="analysis-list">
-          <h3 className="font-medium">可以参考的平台作品</h3>
+          <h3 className="font-medium">可以参考的作品</h3>
           <ul className="list-disc pl-5">
             {result.relatedProjectSlugs.map((slug) => (
               <li key={slug}>{projectHref ? <Link href={`/projects/${slug}`}>{slug}</Link> : slug}</li>

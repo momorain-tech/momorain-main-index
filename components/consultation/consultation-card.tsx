@@ -14,22 +14,27 @@ import { copyText } from "@/lib/clipboard"
 // 联系内容只放在这个组件的 state 里：不发服务器、不存本地。
 // 复制成功只说「已复制」，不说「已发送」——我们并不知道对方有没有真的发出去。
 
-// 咨询的上下文。只从「已发布的项目数据」生成（服务端组件传进来），
+// 咨询的上下文。只从「已发布的项目数据」和代码里的场景配置生成（服务端组件传进来），
 // 不读 URL 参数——否则别人可以拼一个链接，让面板里显示任意名字和网址
 export type ConsultContext = {
-  source: string // 从哪个入口打开的（nav / card / detail / contact…），目前只用于区分
+  source: string // 从哪个入口打开的（nav / scene / detail / contact…），目前只用于区分
   // 意图决定标题和提示语：需求方 demand / 服务方 provider / 不区分 general
   intent?: "general" | "demand" | "provider"
+  // 第四版：consult = 弹窗里先放轻量咨询表单（微信折叠在下面）；不写 = 只有微信联系卡
+  mode?: "consult"
+  // 预先选好的场景（CONSULT_SCENES 里的一项），微信联系话术里也会带上
+  scene?: string
   project?: { slug: string; name: string; url: string }
-  provider?: { name: string; url: string }
 }
 
 // 对话框标题。放在这里而不是 provider 里，是为了和卡片的文案在同一个文件里对照着改
 export function consultationTitle(context: ConsultContext | null): string {
+  if (context?.mode === "consult")
+    return context.project ? `我也有和「${context.project.name}」类似的情况` : "聊聊你的场景"
   if (context?.project) return `咨询与「${context.project.name}」相关的需求`
   if (context?.intent === "provider") return "交流 AI 服务合作"
   if (context?.intent === "demand") return "沟通 AI 项目需求"
-  return "联系 AI有活"
+  return "联系团队"
 }
 
 type CopyState = { target: "id" | "message"; ok: boolean } | null
@@ -50,10 +55,14 @@ export function ConsultationCard({
   const needId = useId()
 
   const isProvider = context.intent === "provider"
+  // 带场景的联系话术（第四版 §7）：加了微信不知道说什么的人，复制这段发过去就行
   const message = [
-    isProvider ? "你好，我想交流 AI 服务合作与作品展示。" : "你好，我想沟通 AI 项目需求。",
+    isProvider
+      ? "你好，我想交流 AI 服务合作与作品展示。"
+      : context.scene && context.scene !== "还不确定" && context.scene !== "其他"
+        ? `你好，我想聊聊「${context.scene}」这个场景。`
+        : "你好，我想沟通 AI 项目需求。",
     context.project ? `参考作品：${context.project.name}（${context.project.url}）` : "",
-    context.provider ? `相关服务方：${context.provider.name}（${context.provider.url}）` : "",
     need.trim() ? `补充说明：${need.trim()}` : "",
   ]
     .filter(Boolean)
@@ -69,7 +78,7 @@ export function ConsultationCard({
     <div ref={rootRef} className={`consult-card${compact ? " consult-card-compact" : ""}`}>
       <p className="consult-name" id={headingId}>
         {/* 没确认联系人时不编造人名 */}
-        {contactConfig.contactName || "AI有活 · 平台商务"}
+        {contactConfig.contactName || "AI有活 · 核心团队"}
       </p>
 
       <div className="consult-contact">
@@ -108,7 +117,6 @@ export function ConsultationCard({
       {context.project && (
         <p className="consult-source">
           来源作品：<b>{context.project.name}</b>
-          {context.provider && ` · ${context.provider.name}`}
         </p>
       )}
 
@@ -116,8 +124,8 @@ export function ConsultationCard({
       {context.intent && context.intent !== "general" && (
         <p className="consult-note">
           {isProvider
-            ? "添加微信后发送作品与服务资料，平台协助交流合作。"
-            : "添加微信后发送需求，平台协助梳理与对接。"}
+            ? "添加微信后发送作品与服务资料，团队会和你交流合作。"
+            : "添加微信后说说你的情况，团队会和你一起评估。"}
         </p>
       )}
 
@@ -142,7 +150,7 @@ export function ConsultationCard({
               复制联系内容
             </button>
           </div>
-          <p className="consult-note">复制后请自行粘贴到微信发送，平台不会自动收到这些内容。</p>
+          <p className="consult-note">复制后请自行粘贴到微信发送，团队不会自动收到这些内容。</p>
         </details>
       )}
 

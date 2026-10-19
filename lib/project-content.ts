@@ -36,12 +36,26 @@ export const MATURITY_LABELS: Record<Maturity, string> = {
 export const OUTPUT_TYPES = ["image", "video", "file"] as const
 export type OutputType = (typeof OUTPUT_TYPES)[number]
 
-export const OUTPUT_KINDS = ["sample", "recording"] as const
+// 第四版加了两种（建议 §8「原始素材、生成结果、人工修订版明确区分」）：
+// - input：这份样例用的原始素材（原视频、逐字稿……）。首页首屏「输入 → 输出」对照的左边就是它；
+//   它不算成果，发布检查里的「至少一项真实成果」不认它
+// - revised：人工修订过的成果。和 sample（工具直接生成、没改过的）分开标，访客才知道哪些是机器做的
+export const OUTPUT_KINDS = ["sample", "recording", "revised", "input"] as const
 export type OutputKind = (typeof OUTPUT_KINDS)[number]
 
 export const OUTPUT_KIND_LABELS: Record<OutputKind, string> = {
   sample: "示例成果",
   recording: "操作录像",
+  revised: "人工修订版",
+  input: "原始素材",
+}
+
+// 案例里的「成果」= 除了原始素材以外的产物；「样例输入」= 标成原始素材的那几项
+export function resultOutputs(c: CaseContent | undefined): CaseOutput[] {
+  return (c?.outputs ?? []).filter((o) => o.kind !== "input")
+}
+export function inputOutputs(c: CaseContent | undefined): CaseOutput[] {
+  return (c?.outputs ?? []).filter((o) => o.kind === "input")
 }
 
 // ─── 结构 ─────────────────────────────────────────────────────────
@@ -85,7 +99,8 @@ export type CaseContent = {
   scenario?: string // 业务场景
   problem?: string // 原来怎么处理、卡在哪
   role?: string // 应用负责哪一步
-  input?: string // 公开输入样例的说明
+  input?: string // 公开输入样例的说明（首页场景演示里叫「本样例的处理范围」）
+  manualEdits?: string // 这份样例产物里人工改了哪些（第四版：成果旁边必须说明，没改就写「未人工修改」）
   steps?: string[] // 关键步骤
   outputs?: CaseOutput[]
   contribution?: {
@@ -182,7 +197,7 @@ function validateOutput(v: unknown, i: number): Result<CaseOutput> {
     return { ok: false, error: `${label}的类型必须是 image / video / file` }
   }
   if (!OUTPUT_KINDS.includes(v.kind as OutputKind)) {
-    return { ok: false, error: `${label}必须标明是「示例成果」还是「操作录像」` }
+    return { ok: false, error: `${label}必须标明是示例成果、操作录像、人工修订版还是原始素材` }
   }
   const url = typeof v.url === "string" ? v.url.trim() : ""
   if (!isSafeMediaUrl(url)) {
@@ -224,6 +239,7 @@ export function validateCaseContent(v: unknown): Result<CaseContent | undefined>
     ["problem", "原来的问题"],
     ["role", "应用负责的环节"],
     ["input", "输入样例"],
+    ["manualEdits", "人工修改说明"],
     ["dataFlow", "数据去向"],
   ]
   for (const [key, label] of texts) {
@@ -318,7 +334,7 @@ export function checkPublish(p: PublishFields): string[] {
   if (!c?.audience) missing.push("适合谁")
   if (!c?.scenario) missing.push("业务场景")
   if (!c?.problem) missing.push("原来的问题")
-  if (!c?.outputs?.length) missing.push("至少一项真实成果")
+  if (!resultOutputs(c).length) missing.push("至少一项真实成果（原始素材不算）")
   if (!c?.contribution?.self) missing.push("团队贡献 · 自研部分")
   if (!c?.deliverables?.length) missing.push("交付物")
   if (!c?.limits?.length) missing.push("限制与费用")

@@ -2,6 +2,7 @@ import {
   CONTACT_GROUP,
   CONTACT_KEYS,
   CONTACT_TYPES,
+  consultFields,
   demandGroups,
   migrateLegacyContact,
   providerGroups,
@@ -57,8 +58,9 @@ export function validateFields(fields: IntakeField[], data: Values, prefix = "")
       else if (f.required && !value) errors[prefix + f.key] = "请勾选确认"
       continue
     }
-    // 下拉是「选」不是「填」，提示语跟着变
-    if (f.required && empty) errors[prefix + f.key] = f.type === "select" ? `请选择${f.label}` : `请填写${f.label}`
+    // 下拉、单选按钮是「选」不是「填」，提示语跟着变
+    if (f.required && empty)
+      errors[prefix + f.key] = f.type === "select" || f.type === "choice" ? `请选择${f.label}` : `请填写${f.label}`
     if (f.options && !empty) {
       const choices = Array.isArray(value) ? value : [value]
       if (choices.some((v) => !f.options!.includes(v)))
@@ -130,7 +132,7 @@ export function contactErrors(values: Values): Record<string, string> {
     const error = validateContact(type, v)
     if (error) errors[key] = error
   }
-  if (!filled) errors[CONTACT_GROUP] = "电话、微信、邮箱至少填一项，方便平台联系你"
+  if (!filled) errors[CONTACT_GROUP] = "电话、微信、邮箱至少填一项，方便团队联系你"
   return errors
 }
 
@@ -216,6 +218,49 @@ export function validateDemandSubmission(body: unknown): { ok: true; value: Dema
       analysisConsent: b.analysisConsent === true,
     },
   }
+}
+
+export type ConsultSubmission = {
+  requestKey: string
+  values: Values
+  reference: string // 从哪个作品的场景进来的（slug），空字符串 = 没有。服务端再去已发布列表里核对
+}
+// 轻量咨询（第四版）的完整校验：两道选择题必选、补充说明选填、联系方式至少一项。
+// 和需求一样要勾「资料用途」确认——联系方式交给我们，就要说清楚拿来做什么
+export function validateConsultSubmission(body: unknown): { ok: true; value: ConsultSubmission } | Invalid {
+  const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>
+  const errors: Record<string, string> = {}
+  if (!isRequestKey(b.requestKey)) errors.requestKey = "页面状态异常，请刷新后重试"
+  const values = isValues(b.values) ? b.values : {}
+  if (!isValues(b.values)) errors.values = "资料格式有误"
+  Object.assign(errors, validateFields(consultFields, values), contactErrors(values))
+  if (b.consent !== true) errors.consent = "请确认联系方式的用途"
+  const reference = b.reference === undefined || b.reference === "" ? "" : b.reference
+  if (reference !== "" && !isSlug(reference)) errors.reference = "参考作品无效"
+  if (Object.keys(errors).length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: {
+      requestKey: b.requestKey as string,
+      values: normalizeValues(consultFields, values),
+      reference: reference as string,
+    },
+  }
+}
+
+// 轻量咨询的本地草稿：没登录点提交 → 存这里 → 去登录 → 回到首页自动打开咨询框恢复。
+// 比需求草稿简单得多（没有作品、附件），单独一个结构，key 也单独一个
+export type ConsultDraft = { version: 1; requestKey: string; values: Values; reference: string }
+export function isConsultDraft(input: unknown): input is ConsultDraft {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return false
+  const d = input as Record<string, unknown>
+  return (
+    d.version === 1 &&
+    isRequestKey(d.requestKey) &&
+    isValues(d.values) &&
+    typeof d.reference === "string" &&
+    d.reference.length <= 100
+  )
 }
 
 export type ProviderSubmission = {

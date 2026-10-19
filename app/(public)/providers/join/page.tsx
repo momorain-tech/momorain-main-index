@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 export default function ProviderJoinPage() {
   return (
     <div className="wrap participation-page">
-      <Link className="detail-back" href="/#services">
-        ← 返回服务内容
+      <Link className="detail-back" href="/#team">
+        ← 返回首页
       </Link>
       <header>
         <h1>提交服务资料</h1>

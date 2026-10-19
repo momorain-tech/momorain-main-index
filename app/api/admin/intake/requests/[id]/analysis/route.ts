@@ -14,6 +14,7 @@ export async function POST(request: Request, { params }: RouteContext) {
   const result = await requeueAnalysis((await params).id)
   if (result === "not_enabled")
     return NextResponse.json({ error: "AI 初评还没配置（INTAKE_AI_* 环境变量）" }, { status: 409 })
+  if (result === "consult") return NextResponse.json({ error: "轻量咨询不做 AI 初评" }, { status: 409 })
   if (result === "busy") return NextResponse.json({ error: "已经在排队或分析中" }, { status: 409 })
   return NextResponse.json({ status: "queued" })
 }

@@ -1,100 +1,21 @@
-import type { Metadata } from "next"
-import Link from "next/link"
-import { notFound, permanentRedirect } from "next/navigation"
-import { getProvider, providerMonogram, providers } from "@/config/platform"
-import { highExposureExcludeSlugs } from "@/config/home"
-import { getHomeProjects } from "@/lib/projects"
-import { ProjectCard } from "@/components/projects/project-card"
-import { ConsultationTrigger } from "@/components/consultation/consultation-provider"
-import { siteConfig } from "@/config/site"
+import { permanentRedirect } from "next/navigation"
 
-// 每个服务方一个页面：/providers/<slug>。
-// 服务方名单是写死在 config/platform.ts 里的，所以构建时就能全部预渲染；
-// 同目录下的 /providers/join 是静态路由，Next.js 会优先匹配它，不会被这里的 [slug] 抢走
+import { legacyProviderSlugs } from "@/config/platform"
+
+// 原服务方页 /providers/<slug>。第四版（2026-10-19）起对外统一是一个核心团队，
+// 四个服务方展示身份和更早的 /providers/momorain 都不再单独成页：
+// 已经转发出去的旧链接永久跳转（308）到首页「核心团队」区，不落进 404。
+//
+// 同目录下的 /providers/join（服务方合作）是静态路由，Next.js 会优先匹配它，不会被这里的 [slug] 抢走
 type Props = { params: Promise<{ slug: string }> }
 
-export const revalidate = 300
 // 名单之外的地址一律 404，不在运行时按需渲染
 export const dynamicParams = false
 export function generateStaticParams() {
-  // 旧地址 /providers/momorain 也要生成，否则 dynamicParams=false 会直接 404、走不到下面的跳转
-  return [...providers.map((p) => ({ slug: p.slug })), { slug: "momorain" }]
+  return legacyProviderSlugs.map((slug) => ({ slug }))
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const provider = getProvider((await params).slug)
-  return provider ? { title: `${provider.name} · 服务与作品` } : {}
-}
-
-export default async function ProviderPage({ params }: Props) {
-  const { slug } = await params
-  // 改版前所有作品都挂在 /providers/momorain 下，已经转发出去的旧链接带回作品列表
-  if (slug === "momorain") permanentRedirect("/#projects")
-  const provider = getProvider(slug)
-  if (!provider) notFound()
-  const { all } = await getHomeProjects()
-  // 只列已确认归属这个服务方的作品；敏感项目不进这个高曝光页（规则和首页精选共用一份）
-  const projects = all.filter(
-    (p) => provider.projectSlugs.includes(p.slug) && !highExposureExcludeSlugs.includes(p.slug),
-  )
-  return (
-    <div className="wrap provider-page">
-      <Link className="detail-back" href="/#projects">
-        ← 返回 Demo展示
-      </Link>
-      <header className="provider-profile">
-        <span className="provider-monogram" aria-hidden="true">
-          {providerMonogram(provider)}
-        </span>
-        <div>
-          <span className="kicker">{provider.type} · 入驻服务方</span>
-          <h1>{provider.name}</h1>
-          <p>{provider.intro}</p>
-          <div className="demo-tags">
-            {provider.directions.map((d) => (
-              <span key={d}>{d}</span>
-            ))}
-          </div>
-          <p className="field-hint">{provider.availability}</p>
-          <ConsultationTrigger
-            className="btn-primary btn-md"
-            context={{
-              source: "provider-profile",
-              intent: "demand",
-              provider: {
-                name: provider.name,
-                url: `${siteConfig.url}/providers/${provider.slug}`,
-              },
-            }}
-          >
-            咨询此服务方
-          </ConsultationTrigger>
-        </div>
-      </header>
-      <section>
-        <h2>代表作品</h2>
-        <p className="detail-muted">查看实际用途、成果与团队贡献，使用条件以各作品详情为准。</p>
-        <div className="proj-grid">
-          {projects.map((p) => (
-            <ProjectCard project={p} source="provider" key={p.slug} />
-          ))}
-        </div>
-      </section>
-      <section className="provider-scope">
-        <h2>服务范围与合作说明</h2>
-        <p>
-          围绕内容生产、业务辅助、网站与应用等任务，沟通原型、应用开发、模型集成、部署与操作文档。具体可承接范围以项目评估为准。
-        </p>
-        <p>
-          报价方式、排期、源码交付、部署环境、维护支持与第三方费用逐项沟通，不预设统一价格或周期。
-        </p>
-        <p>
-          部分项目基于开源项目改造，详情中说明原作与团队承担的工作。页面署名不是“认证专家”或交付担保。
-        </p>
-        <Link className="inline-link" href="/requests/new">
-          整理我的需求 →
-        </Link>
-      </section>
-    </div>
-  )
+export default async function LegacyProviderPage({ params }: Props) {
+  await params
+  permanentRedirect("/#team")
 }

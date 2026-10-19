@@ -14,22 +14,27 @@ import { useEffect } from "react"
 // 这些链接打开后要落到新首页对应的位置，而不是停在页面顶部。
 // 用 replaceState 把地址栏也换成新锚点，用户再分享出去的就是新链接
 //
-// 第一版（2026-10 P0/P1）的区块在第二版又合并了一次，这几条也要兼容。
-// #faq 不在这里：FAQ 收进了服务内容下面的折叠面板，那个面板本身就叫 id="faq"，
+// 第一版（2026-10 P0/P1）的区块在第二版又合并了一次，第四版再重排一次，这几条都要兼容。
+// #top 是首屏自己的 id（不是浏览器的「回顶部」约定，那个要求 id 不存在）。
+// #faq、#contact 不在这里：第四版仍有同名区块。FAQ 收进合作方式下面的折叠面板，那个面板本身就叫 id="faq"，
 // 滚动前会自动展开（见下面的 openCollapsedAncestors）
 const LEGACY_HASHES: Record<string, string> = {
-  "#about": "#platform",
-  "#top": "#platform",
-  "#goals": "#platform",
-  "#featured": "#projects",
-  "#process": "#services",
-  "#shelf": "#projects", // 神器货架 → 项目案例
-  "#who": "#services", // 按身份挑 → 服务内容
-  "#pain": "#services", // 痛点区 → 服务内容
-  "#contrast": "#services",
-  "#custom": "#contact", // 专属定制 → 联系合作
-  "#dev": "#contact", // 神器上架 → 联系合作
-  "#subscribe": "#contact", // 邮箱订阅（已下线）→ 联系合作
+  // 第二、三版和暗色首页的四个区块（第四版 2026-10-19 重排成 场景 → 合作 → 团队 → 咨询）
+  "#platform": "#top",
+  "#services": "#cooperation", // 服务内容 → 合作方式
+  "#projects": "#scenes", // Demo展示 → 场景演示
+  // 更早的区块
+  "#about": "#top",
+  "#goals": "#top",
+  "#featured": "#scenes",
+  "#process": "#cooperation",
+  "#shelf": "#scenes", // 神器货架 → 场景演示
+  "#who": "#cooperation", // 按身份挑 → 合作方式
+  "#pain": "#cooperation", // 痛点区 → 合作方式
+  "#contrast": "#cooperation",
+  "#custom": "#contact", // 专属定制 → 页尾咨询
+  "#dev": "#contact", // 神器上架 → 页尾咨询
+  "#subscribe": "#contact", // 邮箱订阅（已下线）→ 页尾咨询
   "#chat": "#contact",
 }
 

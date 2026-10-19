@@ -75,14 +75,16 @@ export async function enqueueAnalysis(
 
 // 管理员点「重新分析」：失败 / 待核对的任务重置回排队；从没排过队的（未开启、名额满）新建一条。
 // 不受每日上限限制——这是人工决定要花这笔钱
-export async function requeueAnalysis(requestId: string): Promise<"queued" | "not_enabled" | "busy"> {
+export async function requeueAnalysis(requestId: string): Promise<"queued" | "not_enabled" | "busy" | "consult"> {
   if (!aiConfig()) return "not_enabled"
   const pool = getPool()
   const [[req]] = await pool.execute<RowDataPacket[]>(
-    "SELECT version FROM intake_requests WHERE id = ?",
+    "SELECT version, JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.kind')) AS kind FROM intake_requests WHERE id = ?",
     [requestId],
   )
   if (!req) return "busy"
+  // 轻量咨询没有「问题 / 期望结果」，发给模型只会得到一份空洞的分析，还要花钱
+  if (req.kind === "consult") return "consult"
   const [jobs] = await pool.execute<RowDataPacket[]>(
     "SELECT id, status FROM ai_analysis_jobs WHERE request_id = ? AND request_version = ? AND prompt_version = ?",
     [requestId, req.version, PROMPT_VERSION],

@@ -11,7 +11,7 @@ import {
   formatTime,
 } from "@/lib/intake/constants"
 import { adminGetRequest } from "@/lib/intake/store"
-import { contactsOf, demandGroups } from "@/components/participation/intake-fields"
+import { CONTACT_GROUP, consultFields, contactsOf, demandGroups } from "@/components/participation/intake-fields"
 import { AnalysisBlock } from "@/components/participation/receipt-view"
 import {
   ContactList,
@@ -43,10 +43,12 @@ export default async function AdminIntakeRequestPage({ params, searchParams }: P
   }
   if (!r) notFound()
   const me = await getCurrentUser()
-  // 第一步的字段 = 需求内容，第二步的字段 = 称呼和联系方式（见 intake-fields.ts 的 demandGroups）
-  const contentFields = demandGroups[0].fields
+  // 第一步的字段 = 需求内容，第二步的字段 = 称呼和联系方式（见 intake-fields.ts 的 demandGroups）。
+  // 轻量咨询（第四版首页）只有场景、进度、补充说明三项，联系方式下面统一显示
+  const isConsult = r.kind === "consult"
+  const contentFields = isConsult ? consultFields.filter((f) => f.oneOf !== CONTACT_GROUP) : demandGroups[0].fields
   const a = r.analysis
-  const canRequeue = !!aiConfig() && !["queued", "running"].includes(a.status)
+  const canRequeue = !isConsult && !!aiConfig() && !["queued", "running"].includes(a.status)
 
   return (
     <div className="space-y-6">
@@ -62,7 +64,12 @@ export default async function AdminIntakeRequestPage({ params, searchParams }: P
       </div>
 
       <section className="rounded-lg border p-4">
-        <h3 className="mb-2 font-medium">需求内容</h3>
+        <h3 className="mb-2 font-medium">{isConsult ? "咨询内容（轻量咨询）" : "需求内容"}</h3>
+        {isConsult && (
+          <p className="mb-2 text-xs text-muted-foreground">
+            访客从首页场景发起的简短咨询，没有填写具体问题和期望结果。联系时先了解现状，再看是否需要整理成完整需求。
+          </p>
+        )}
         <dl>
           {contentFields.map((f) => (
             <KV key={f.key} label={f.label} value={r.values[f.key]} />
@@ -74,7 +81,7 @@ export default async function AdminIntakeRequestPage({ params, searchParams }: P
       <section className="rounded-lg border p-4">
         <h3 className="mb-2 font-medium">联系资料</h3>
         <dl>
-          <KV label="称呼" value={r.values.name} />
+          {!isConsult && <KV label="称呼" value={r.values.name} />}
           <div className="grid grid-cols-[8rem_1fr] gap-3 py-1.5 text-sm">
             <dt className="text-muted-foreground">联系方式</dt>
             <dd className="break-words">
@@ -82,7 +89,10 @@ export default async function AdminIntakeRequestPage({ params, searchParams }: P
             </dd>
           </div>
           <KV label="提交账号" value={r.ownerId} />
-          <KV label="同意书版本" value={`${r.consentVersion}${r.analysisConsent ? " · 同意 AI 初评" : " · 未同意 AI 初评"}`} />
+          <KV
+            label="同意书版本"
+            value={isConsult ? r.consentVersion : `${r.consentVersion}${r.analysisConsent ? " · 同意 AI 初评" : " · 未同意 AI 初评"}`}
+          />
         </dl>
         <p className="mt-2 text-xs text-muted-foreground">
           用户留了哪几种就可以用哪几种联系。这些是用户自己填的，和登录手机号无关；完整联系方式只在这一页显示，不要转发到群里。
@@ -103,7 +113,7 @@ export default async function AdminIntakeRequestPage({ params, searchParams }: P
         />
       </section>
 
-      <section className="rounded-lg border p-4">
+      {!isConsult && <section className="rounded-lg border p-4">
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <h3 className="font-medium">AI 初评</h3>
           <span className="text-sm text-muted-foreground">
@@ -126,7 +136,7 @@ export default async function AdminIntakeRequestPage({ params, searchParams }: P
           </p>
         )}
         {a.result && <AnalysisBlock result={a.result} />}
-      </section>
+      </section>}
 
       <section className="space-y-2">
         <h3 className="font-medium">操作记录</h3>

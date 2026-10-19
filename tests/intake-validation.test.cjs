@@ -195,3 +195,36 @@ test('服务方提交：作品数量 1—6，未勾公开授权不通过', () =>
   assert.equal(validateProviderSubmission({ ...provider, works: Array(7).fill(work) }).ok, false)
   assert.ok(validateProviderSubmission({ ...provider, works: [{ ...work, publicConsent: '' }] }).errors['work-0-publicConsent'])
 })
+
+// ─── 轻量咨询（第四版）─────────────────────────────────────────────
+const { validateConsultSubmission, isConsultDraft } = load('lib/intake-validation.ts')
+test('轻量咨询：两道选择题必选、联系方式至少一项；不要求问题和期望结果', () => {
+  const r = validateConsultSubmission({ requestKey: KEY, values: {}, consent: true })
+  assert.equal(r.ok, false)
+  assert.equal(r.errors.scene, '请选择想处理什么')
+  assert.equal(r.errors.stage, '请选择目前到哪一步')
+  assert.ok(r.errors.contacts)
+  assert.equal(r.errors.problem, undefined)
+  const ok = validateConsultSubmission({
+    requestKey: KEY,
+    values: { scene: '制作讲解视频', stage: '了解可行性', wechat: 'wx_test123', note: '  ', extra: '多塞的字段' },
+    reference: 'whiteboard-video',
+    consent: true,
+  })
+  assert.equal(ok.ok, true)
+  // 空白的补充说明、没定义过的字段都不进库
+  assert.deepEqual(ok.value.values, { scene: '制作讲解视频', stage: '了解可行性', wechat: 'wx_test123' })
+  assert.equal(ok.value.reference, 'whiteboard-video')
+})
+test('轻量咨询：选项外的字、没勾确认、非法参考作品都不通过', () => {
+  const base = { requestKey: KEY, values: { scene: '帮我写论文', stage: '了解可行性', email: 'a@b.cn' }, consent: true }
+  assert.ok(validateConsultSubmission(base).errors.scene)
+  assert.ok(validateConsultSubmission({ ...base, values: { ...base.values, scene: '其他' }, consent: false }).errors.consent)
+  assert.ok(validateConsultSubmission({ ...base, values: { ...base.values, scene: '其他' }, reference: '../x' }).errors.reference)
+})
+test('轻量咨询草稿：结构不对就不恢复', () => {
+  assert.equal(isConsultDraft({ version: 1, requestKey: KEY, values: { scene: '其他' }, reference: '' }), true)
+  assert.equal(isConsultDraft({ version: 2, requestKey: KEY, values: {}, reference: '' }), false)
+  assert.equal(isConsultDraft({ version: 1, requestKey: 'x', values: {}, reference: '' }), false)
+  assert.equal(isConsultDraft({ version: 1, requestKey: KEY, values: { note: 'x'.repeat(5000) }, reference: '' }), false)
+})

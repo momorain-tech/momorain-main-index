@@ -1,13 +1,13 @@
 import Link from "next/link"
 
 import { contactConfig } from "@/config/contact"
-import { platformNavigation } from "@/config/platform"
+import { platformNavigation, providerJoin } from "@/config/platform"
 import { siteConfig } from "@/config/site"
 import { BrandMark } from "@/components/jike/brand-mark"
 
 // 页脚是服务端组件（没有 "use client"）：不需要交互，内容在构建时就渲染进 HTML。
 //
-// 二维码大图只放在首页联系区和弹窗里，页脚不再重复一整块面板；
+// 二维码大图只放在首页页尾咨询区和弹窗里，页脚不再重复一整块面板；
 // 但**微信号要以纯文本留在这里**：详情页、团队页、资料整理页的联系按钮都要 JS 才能弹窗，
 // 微信内置浏览器里 JS 加载慢或失败时，页脚这一行就是访客唯一能看到的联系方式。
 export function JikeFooter() {
@@ -20,7 +20,7 @@ export function JikeFooter() {
               <BrandMark />
               {siteConfig.name}
             </Link>
-            <p>让 AI 能力，落到真实业务。</p>
+            <p>先看真实成果，再一起评估你的场景。</p>
             <p className="footer-wechat">
               微信联系：<span className="consult-id-value">{contactConfig.wechatId}</span>
             </p>
@@ -32,6 +32,8 @@ export function JikeFooter() {
                 {l.label}
               </Link>
             ))}
+            {/* 服务方合作入口（第四版从首页移到这里）：首页的主线是需求咨询，提供服务的人从页脚进 */}
+            <Link href={providerJoin.href}>{providerJoin.label}</Link>
           </div>
         </div>
         <div className="copyright">

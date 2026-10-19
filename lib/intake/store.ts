@@ -4,7 +4,6 @@ import type { PoolConnection, RowDataPacket } from "mysql2/promise"
 
 import { getPool } from "@/lib/db"
 import type { SessionUser } from "@/lib/auth"
-import { projectProvider } from "@/config/platform"
 import {
   CONSENT_VERSION,
   CONTACT_KEYS,
@@ -12,7 +11,13 @@ import {
   isContactType,
   type ContactEntry,
 } from "@/components/participation/intake-fields"
-import { legacyContactShape, type DemandSubmission, type ProviderSubmission, type Values } from "@/lib/intake-validation"
+import {
+  legacyContactShape,
+  type ConsultSubmission,
+  type DemandSubmission,
+  type ProviderSubmission,
+  type Values,
+} from "@/lib/intake-validation"
 import { enqueueAnalysis } from "@/lib/intake/analysis"
 import { newId } from "@/lib/intake/http"
 import {
@@ -89,7 +94,9 @@ export async function resolveReference(slug: string): Promise<ReferenceSnapshot 
     [slug],
   )
   if (!rows[0]) return null
-  return { slug: rows[0].slug, name: rows[0].name, provider: projectProvider(rows[0].slug)?.name ?? null }
+  // provider 是第二版「每个作品署一个服务方」时代的字段，旧记录里还有值（后台照常显示）。
+  // 第四版起对外统一是一个核心团队，新记录不再写服务方名字
+  return { slug: rows[0].slug, name: rows[0].name, provider: null }
 }
 
 export type RequestReceipt = {
@@ -165,6 +172,65 @@ export async function createRequest(
 }
 
 type JobRow = { status: AnalysisStatus; result_json: AnalysisResult | null; error_code: string | null; updated_at: Date }
+// 轻量咨询（第四版）：和需求存在同一张表、走同一个后台队列，靠 payload_json.kind = "consult" 区分。
+// 为什么不另建表：跟进流程（状态、负责人、给用户的说明、操作记录）完全一样，分两张表就要把这些再写一遍；
+// 也不用跑迁移。代价是读的地方要认 kind——见下面 getRequestForOwner / adminGetRequest 返回的 kind。
+// 不排 AI 初评：只有两道选择题和一句话，没什么可分析的
+export async function createConsult(
+  user: SessionUser,
+  sub: ConsultSubmission,
+  reference: ReferenceSnapshot | null,
+): Promise<CreateOutcome<RequestReceipt>> {
+  const payload = { kind: "consult", values: sub.values, reference, consentVersion: CONSENT_VERSION }
+  // 哈希里带上 "consult"：同一个幂等键先交需求、再交咨询（正常不会发生），也会被当成不同内容
+  const hash = sha256(JSON.stringify(["consult", sub.values, reference?.slug ?? ""]))
+  const title = `轻量咨询 · ${sub.values.scene as string}`.slice(0, 60)
+
+  const existing = async (conn: PoolConnection | null) => {
+    const exec = conn ?? getPool()
+    const [rows] = await exec.execute<RowDataPacket[]>(
+      "SELECT id, payload_hash, status, analysis_status, created_at FROM intake_requests WHERE owner_id = ? AND request_key = ?",
+      [user.userId, sub.requestKey],
+    )
+    return rows[0]
+  }
+  const replay = (row: RowDataPacket): CreateOutcome<RequestReceipt> =>
+    row.payload_hash === hash
+      ? {
+          kind: "replayed",
+          record: { id: row.id, status: row.status, analysisStatus: row.analysis_status, createdAt: iso(row.created_at) },
+        }
+      : { kind: "conflict" }
+
+  try {
+    return await withTx(async (conn) => {
+      const found = await existing(conn)
+      if (found) return replay(found)
+      const id = newId("rq")
+      await conn.execute(
+        `INSERT INTO intake_requests (id, owner_id, request_key, payload_hash, payload_json, title)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, user.userId, sub.requestKey, hash, JSON.stringify(payload), title],
+      )
+      await addEvent(conn, { type: "request", id, actor: user, event: "received", note: "提交轻量咨询", version: 1 })
+      return {
+        kind: "created" as const,
+        record: { id, status: "received" as const, analysisStatus: "not_requested" as const, createdAt: new Date().toISOString() },
+      }
+    })
+  } catch (err) {
+    if ((err as { code?: string }).code === "ER_DUP_ENTRY") {
+      const found = await existing(null)
+      if (found) return replay(found)
+    }
+    throw err
+  }
+}
+
+// 一条 intake_requests 记录是哪一类：老记录没有 kind 字段，都是完整需求
+export type RequestKind = "demand" | "consult"
+const kindOf = (payload: { kind?: unknown }): RequestKind => (payload?.kind === "consult" ? "consult" : "demand")
+
 async function latestJob(requestId: string, version: number): Promise<JobRow | undefined> {
   const [rows] = await getPool().execute<RowDataPacket[]>(
     `SELECT status, result_json, error_code, updated_at FROM ai_analysis_jobs
@@ -176,6 +242,7 @@ async function latestJob(requestId: string, version: number): Promise<JobRow | u
 
 export type OwnerRequestView = {
   id: string
+  kind: RequestKind
   title: string
   status: RequestStatus
   customerNote: string | null
@@ -200,6 +267,7 @@ export async function getRequestForOwner(id: string, ownerId: string): Promise<O
   const status: AnalysisStatus = job?.status ?? r.analysis_status
   return {
     id: r.id,
+    kind: kindOf(r.payload_json),
     title: r.title,
     status: r.status,
     customerNote: r.customer_note,
@@ -474,13 +542,14 @@ const contactsFromRow = (r: RowDataPacket): ContactEntry[] =>
 // LIKE 里 % 和 _ 是通配符，用户搜「100%」时要转义成普通字符（MySQL 默认的转义符是反斜杠）
 const escapeLike = (s: string) => s.replace(/[\\%_]/g, "\\$&")
 
-// 关键词在这几处里找：需求名称、问题、期望结果、称呼、三种联系方式（含旧格式的 contact）、公司名。
+// 关键词在这几处里找：需求名称、问题、期望结果、称呼、三种联系方式（含旧格式的 contact）、公司名，
+// 以及轻量咨询的补充说明（note）。
 // 都是 JSON 里取出来的字符串，MySQL 给它们的排序规则是 utf8mb4_bin（区分大小写），
 // 所以两边都 LOWER() 一下，搜「Wang」也能找到「wang_123」。
 // 每一列**单独**和参数比较，不拼成一个长字符串——不同排序规则的列拼在一起会报「Illegal mix of collations」
 const SEARCH_COLUMNS = [
   "r.title",
-  ...["problem", "outcome", "name", "phone", "wechat", "email", "contact", "company"].map(
+  ...["problem", "outcome", "name", "phone", "wechat", "email", "contact", "company", "note"].map(
     (k) => `JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.${k}'))`,
   ),
 ]
@@ -519,7 +588,8 @@ function requestWhere(p: AdminRequestQuery): { sql: string; args: string[] } {
 export type AdminRequestRow = {
   id: string
   title: string
-  // 「想解决的问题」的开头，列表里放在标题下面，不用点进去也能大致知道是什么需求
+  // 「想解决的问题」的开头，列表里放在标题下面，不用点进去也能大致知道是什么需求。
+  // 轻量咨询没有这一项，换成「进度 · 补充说明」
   summary: string
   name: string
   // 用户留下的全部联系方式（列表页脱敏显示）
@@ -538,7 +608,9 @@ export async function adminListRequests(p: AdminRequestQuery): Promise<{ rows: A
   // 排序加上 id 做第二关键字：同一秒提交的两条，翻页时顺序固定，不会一条出现两次、一条消失
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT r.id, r.title, r.status, r.analysis_status, r.assignee_name, r.created_at,
-            LEFT(JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.problem')), 80) AS summary,
+            LEFT(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.problem')),
+                          CONCAT_WS(' · ', JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.stage')),
+                                           JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.note')))), 80) AS summary,
             JSON_UNQUOTE(JSON_EXTRACT(r.payload_json, '$.values.name')) AS name,
             ${contactColumns("r.payload_json", "$.values")},
             (SELECT j.status FROM ai_analysis_jobs j WHERE j.request_id = r.id AND j.request_version = r.version
@@ -593,6 +665,7 @@ async function eventsFor(type: "request" | "application", id: string): Promise<I
 
 export type AdminRequestDetail = {
   id: string
+  kind: RequestKind
   ownerId: string
   title: string
   status: RequestStatus
@@ -616,6 +689,7 @@ export async function adminGetRequest(id: string): Promise<AdminRequestDetail | 
   const job = await latestJob(r.id, r.version)
   return {
     id: r.id,
+    kind: kindOf(r.payload_json),
     ownerId: r.owner_id,
     title: r.title,
     status: r.status,

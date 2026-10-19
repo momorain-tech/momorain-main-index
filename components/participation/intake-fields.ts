@@ -10,7 +10,8 @@ export type IntakeField = {
   key: string
   label: string
   // check：单个勾选框，勾上的值是 "是"，没勾是 ""（必填 = 必须勾上）
-  type?: "text" | "textarea" | "select" | "multi" | "url" | "check"
+  // choice：一组单选按钮（选项少、想让人一眼看全时用，比下拉少点一下）。存的值和 select 一样是一个字符串
+  type?: "text" | "textarea" | "select" | "multi" | "url" | "check" | "choice"
   required?: boolean
   hint?: string
   // 输入框里的灰色示例。只放「写成什么样」的例子，不放规则——规则写在 hint 里，
@@ -50,7 +51,7 @@ export function isContactType(v: unknown): v is ContactType {
 export const CONTACT_GROUP = "contacts"
 export const CONTACT_KEYS: Record<ContactType, string> = { 电话: "phone", 微信: "wechat", 邮箱: "email" }
 
-const contactFields: IntakeField[] = [
+export const contactFields: IntakeField[] = [
   {
     key: "phone",
     label: "电话",
@@ -83,7 +84,7 @@ const contactFields: IntakeField[] = [
 // 组的标题和说明（FieldList 把 oneOf 相同的字段包进一个 fieldset，用这里的文字）
 export const CONTACT_GROUP_TEXT = {
   legend: "联系方式",
-  hint: "电话、微信、邮箱至少填一项，填了的平台都可能用来联系你，和登录用的手机号无关。只用于对接，不公开展示，也不会发给 AI 模型。",
+  hint: "电话、微信、邮箱至少填一项，填了的团队都可能用来联系你，和登录用的手机号无关。只用于对接，不公开展示，也不会发给 AI 模型。",
 }
 
 type RawValues = Record<string, string | string[] | undefined>
@@ -112,12 +113,42 @@ export function migrateLegacyContact<T extends RawValues>(values: T): T {
   return { ...rest, [key]: typeof rest[key] === "string" && (rest[key] as string).trim() ? rest[key] : contact } as T
 }
 
+// ─── 轻量咨询（第四版）：选两题 + 一句补充 + 联系方式 ─────────────────
+// 给「还在了解、说不清具体需求」的访客：不要求写问题和期望结果，选一下场景和进度就能提交。
+// 存在 intake_requests 同一张表里（payload_json.kind = "consult"），后台同一个队列跟进，不用迁移。
+// ⚠️ 两组选项的字会原样存进数据库，后台按字显示和筛选——上线后只加不改字
+export const CONSULT_SCENES = ["整理培训资料", "制作讲解视频", "分析表达", "其他", "还不确定"] as const
+export const CONSULT_STAGES = ["了解可行性", "已有样例", "已有明确项目"] as const
+// 选了「已有明确项目」：提示继续填完整需求（带着场景过去），也允许就这样提交
+export const CONSULT_STAGE_PROJECT = "已有明确项目"
+
+export const consultFields: IntakeField[] = [
+  { key: "scene", label: "想处理什么", type: "choice", required: true, options: [...CONSULT_SCENES] },
+  { key: "stage", label: "目前到哪一步", type: "choice", required: true, options: [...CONSULT_STAGES] },
+  {
+    key: "note",
+    label: "补充说明",
+    type: "textarea",
+    max: 1000,
+    placeholder: "简单说说现在怎么做，例如：每周有十几个操作视频，靠人工截图写说明",
+  },
+  ...contactFields,
+]
+
 // ─── 需求方：两步 ───────────────────────────────────────────────
 export const demandGroups: IntakeGroup[] = [
   {
     title: "描述需求",
     description: "不用先懂技术，把现在的问题和希望得到的结果说清楚就好。",
     fields: [
+      // 从首页场景或轻量咨询「已有明确项目」跳过来时，地址栏带 ?scene=，这里会预先选好（第四版 §7）
+      {
+        key: "scene",
+        label: "想处理哪类任务",
+        type: "select",
+        options: [...CONSULT_SCENES],
+        hint: "从首页场景进来时已经替你选好，可以改。",
+      },
       {
         key: "problem",
         label: "你想解决什么问题",
@@ -262,7 +293,7 @@ export const workFields: IntakeField[] = [
 export const providerGroups: IntakeGroup[] = [
   {
     title: "基本资料与能力",
-    description: "用客户看得懂的话介绍自己能做什么。联系方式只供平台对接。",
+    description: "用客户看得懂的话介绍自己能做什么。联系方式只供团队对接。",
     fields: [
       { key: "displayName", label: "对外展示名称", required: true, max: 100 },
       {
@@ -316,14 +347,14 @@ export const providerGroups: IntakeGroup[] = [
   },
   {
     title: "核对与提交",
-    description: "确认公开范围后提交。资料公开前，平台会逐项核对并和你确认。",
+    description: "确认公开范围后提交。资料公开前，团队会逐项核对并和你确认。",
     fields: [
       {
         key: "publicScope",
         label: "愿意整理成公开展示的内容",
         type: "multi",
         options: ["展示名称", "服务方向与能力", "代表作品"],
-        hint: "只表示你的意愿，发布前平台还会和你确认。联系方式始终不公开。",
+        hint: "只表示你的意愿，发布前团队还会和你确认。联系方式始终不公开。",
       },
       { key: "scopeNote", label: "公开范围补充说明", max: 500 },
     ],

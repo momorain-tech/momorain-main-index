@@ -1,10 +1,11 @@
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 import type { Project } from "@/lib/projects"
-import { projectProvider, projectScenarios } from "@/config/platform"
+import { resultOutputs } from "@/lib/project-content"
+import { projectScenarios } from "@/config/platform"
 import { ProjectLabels } from "@/components/projects/project-labels"
 
-// 作品卡片（第二版）。和第一版的区别：
+// 作品卡片（第二版起；第四版只用在首页「更多作品」）。和第一版的区别：
 // - 只留一个主动作「查看成果 / 了解作品」进详情页：卡片上不再并排放「立即体验 / 打开工具页 / 咨询」，
 //   让访客先看到成果和使用条件，再在详情页决定体验还是联系（第二版需求文档的要求）
 // - 封面优先用后台填的 cover，没有就借第一张图片成果；都没有就不显示封面。
@@ -12,11 +13,11 @@ import { ProjectLabels } from "@/components/projects/project-labels"
 // - source="featured" 是首页精选的大卡片样式，其余位置是普通卡片
 export function ProjectCard({ project, source }: { project: Project; source: string }) {
   const href = `/projects/${project.slug}`
-  const provider = projectProvider(project.slug)
+  const results = resultOutputs(project.caseContent)
   const cover =
     project.cover ??
     (() => {
-      const image = project.caseContent?.outputs?.find((o) => o.type === "image")
+      const image = results.find((o) => o.type === "image")
       return image ? { url: image.url, alt: image.caption } : undefined
     })()
   const tags = projectScenarios(project.slug)
@@ -35,7 +36,7 @@ export function ProjectCard({ project, source }: { project: Project; source: str
           )}
           {project.maturity === "interactive" && project.demo ? (
             <span className="demo-cover-status">可在线体验</span>
-          ) : project.caseContent?.outputs?.length ? (
+          ) : results.length ? (
             <span className="demo-cover-status">观看成果</span>
           ) : null}
         </Link>
@@ -54,15 +55,11 @@ export function ProjectCard({ project, source }: { project: Project; source: str
           </div>
         )}
         <div className="demo-card-bottom">
-          <span className="demo-author">
-            {provider ? (
-              <Link href={`/providers/${provider.slug}`}>{provider.name}</Link>
-            ) : (
-              "提供者资料整理中"
-            )}
-          </span>
+          {/* 第四版起不再按作品署服务方名字：对外统一是一个核心团队（首页 #team）。
+              开源改造的作品，原作者署名在详情页的「团队贡献」里 */}
+          <span className="demo-author">核心团队</span>
           <Link className="demo-result-link" href={href}>
-            {project.caseContent?.outputs?.length ? "查看成果" : "了解作品"}
+            {results.length ? "查看成果" : "了解作品"}
             <ArrowUpRight size={16} />
           </Link>
         </div>

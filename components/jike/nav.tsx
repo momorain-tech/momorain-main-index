@@ -15,10 +15,11 @@ import { ConsultationTrigger } from "@/components/consultation/consultation-prov
 // 1. 右侧登录/用户入口（UserNav）——按钮用 shadcn 令牌类，在 .jk-skin 容器里自动换成新调色板
 // 2. 明暗切换按钮（设计稿只有深色，浅色为后补配色）
 // 3. ≤768px 时导航链接收进汉堡菜单（设计稿是直接 display:none，窄窗口下导航会整个消失）
-// 4. 右侧主操作「联系平台」打开全站共用的咨询对话框。保持 4 个字：
+// 4. 右侧主操作「聊聊我的场景」（第四版）打开全站共用的咨询对话框，默认是轻量咨询表单。
+//    窄屏（≤400px）时「我的」两个字藏起来，只剩 4 个字「聊聊场景」：
 //    360px 宽时导航栏已经没有余量，再长就会把昵称挤没（见 CLAUDE.md 导航栏窄屏一节）
 //
-// 链接是第二版的四项主导航，和页脚共用 config/platform.ts 的同一份数据。
+// 链接是第四版的三项主导航，和页脚共用 config/platform.ts 的同一份数据。
 // 链接一律写成 /#xxx：从子页面点过来先回首页再滚到区块，在首页点则原地平滑滚动——
 // 滚动和旧锚点兼容都由 (public)/layout 里的 HashScroll 统一处理
 const NAV_LINKS = platformNavigation
@@ -51,8 +52,8 @@ export function JikeNav() {
         <div className="flex min-w-0 items-center gap-3">
           {/* 明暗切换已下线（2026-10-15：全站不做主题切换，二级页面固定清新浅色） */}
           <UserNav />
-          <ConsultationTrigger className="nav-cta" context={{ source: "nav" }}>
-            咨询定制
+          <ConsultationTrigger className="nav-cta" context={{ source: "nav", intent: "demand", mode: "consult" }}>
+            聊聊<span className="nav-cta-long">我的</span>场景
           </ConsultationTrigger>
           {/* 汉堡按钮只在 ≤768px（导航链接被隐藏时）显示，见 jike.css */}
           <button

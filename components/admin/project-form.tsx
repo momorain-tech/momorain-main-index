@@ -74,6 +74,7 @@ type FormState = {
   problem: string
   role: string
   input: string
+  manualEdits: string
   dataFlow: string
   // 列表段：textarea 里一行一项
   steps: string
@@ -118,6 +119,7 @@ function toFormState(p?: AdminProject): FormState {
     problem: c?.problem ?? "",
     role: c?.role ?? "",
     input: c?.input ?? "",
+    manualEdits: c?.manualEdits ?? "",
     dataFlow: c?.dataFlow ?? "",
     steps: lines(c?.steps),
     customization: lines(c?.customization),
@@ -151,6 +153,7 @@ function toPayload(form: FormState, published: boolean) {
     problem: t(form.problem),
     role: t(form.role),
     input: t(form.input),
+    manualEdits: t(form.manualEdits),
     dataFlow: t(form.dataFlow),
     steps: list(form.steps),
     customization: list(form.customization),
@@ -505,7 +508,7 @@ export function ProjectForm({ initial }: { initial?: AdminProject }) {
       {/* ── 真实成果 ── */}
       <Group
         title="真实成果"
-        desc="至少一项。每项都要写清是「示例成果」（预先生成的）还是「操作录像」，以及素材来源和授权。地址留空的行不会保存。"
+        desc="至少一项成果。每项标明类型：示例成果（工具直接生成）、人工修订版、操作录像，或原始素材（这份样例的输入，首页首屏放在左边对照，不算成果），并写清素材来源和授权。地址留空的行不会保存。"
       >
         {form.outputs.map((o, i) => (
           <div key={i} className="space-y-3 rounded-lg border p-4">
@@ -603,6 +606,9 @@ export function ProjectForm({ initial }: { initial?: AdminProject }) {
         </Field>
         <Field label="输入样例说明" hint="公开样例是什么、从哪来">
           <textarea className={textareaClass} value={form.input} onChange={(e) => update("input", e.target.value)} />
+        </Field>
+        <Field label="人工修改说明" hint="首页场景演示里紧挨着成果显示：这份产物里哪些是人工改过的。没改过就写「未人工修改」">
+          <textarea className={textareaClass} value={form.manualEdits} onChange={(e) => update("manualEdits", e.target.value)} />
         </Field>
         <Field label="关键步骤" hint="一行一步">
           <textarea className={textareaClass} value={form.steps} onChange={(e) => update("steps", e.target.value)} />

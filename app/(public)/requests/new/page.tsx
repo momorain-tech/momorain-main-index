@@ -18,12 +18,12 @@ export default async function RequestPage() {
   const { all } = await getHomeProjects()
   return (
     <div className="wrap participation-page request-page">
-      <Link className="detail-back" href="/#services">
-        ← 返回服务内容
+      <Link className="detail-back" href="/#contact">
+        ← 返回首页
       </Link>
       <header>
         <h1>提交 AI 需求</h1>
-        <p>不用先懂技术，说清现在的问题和希望得到的结果，两步就能提交。平台收到后由专人按你留的联系方式联系你。</p>
+        <p>不用先懂技术，说清现在的问题和希望得到的结果，两步就能提交。核心团队收到后按你留的联系方式联系你。还在了解的话，也可以回首页发起更简单的轻量咨询。</p>
       </header>
       <div className="request-layout">
         <div className="request-main">
@@ -47,13 +47,13 @@ export default async function RequestPage() {
                 <dd>上传视频后自动生成带截图的分步教程，能导出 Word，人工改改就能发给学员。</dd>
               </div>
             </dl>
-            <p className="request-help-muted">预算、时间、行业这些拿不准可以先不填，平台联系你时再沟通。</p>
+            <p className="request-help-muted">预算、时间、行业这些拿不准可以先不填，团队联系你时再沟通。</p>
           </section>
           <section>
             <h2>提交之后</h2>
             <ol className="request-steps">
-              <li>平台收到需求，生成需求编号，你可以随时查看进度</li>
-              <li>专人阅读需求，通过你留的电话、微信或邮箱联系你</li>
+              <li>团队收到需求，生成需求编号，你可以随时查看进度</li>
+              <li>团队阅读需求，通过你留的电话、微信或邮箱联系你</li>
               <li>沟通清楚后，给出可行的做法和下一步建议</li>
             </ol>
           </section>
@@ -61,7 +61,7 @@ export default async function RequestPage() {
             <h2>登录与隐私</h2>
             <p>
               填写不需要登录；点「提交」时用手机号登录，方便之后查看进度，登录前填的内容不会丢。
-              联系方式只用于平台和你对接，不公开展示，也不会发给 AI 模型。
+              联系方式只用于团队和你对接，不公开展示，也不会发给 AI 模型。
             </p>
           </section>
         </aside>

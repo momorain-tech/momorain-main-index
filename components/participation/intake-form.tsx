@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Mail, MessageCircle, Pencil, Phone, Plus, Trash2
 import {
   CONTACT_GROUP,
   CONTACT_GROUP_TEXT,
+  CONSULT_SCENES,
   WORK_METHODS,
   contactsOf,
   demandGroups,
@@ -15,8 +16,8 @@ import {
   workFields,
   type IntakeField,
 } from "./intake-fields"
+import { FieldList } from "./field-list"
 import { WorkAssets, type UploadConfig } from "./work-assets"
-import { projectProvider } from "@/config/platform"
 import {
   MAX_WORKS,
   contactErrors,
@@ -94,7 +95,6 @@ export function IntakeForm({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const storageKey = `aiyouhuo:intake:${kind}:v2`
   const project = projects.find((p) => p.slug === reference)
-  const provider = project ? projectProvider(project.slug) : undefined
   const loginHref = `/login?next=${encodeURIComponent(`${kind === "demand" ? "/requests/new" : "/providers/join"}?resume=1`)}`
 
   // 挂载后：生成幂等键、读本地草稿、查登录态、查上传是否开放（只有服务方表单需要）
@@ -113,7 +113,14 @@ export function IntakeForm({
     // ?resume=1 是「提交时发现没登录 → 去登录 → 回来」这条路带的标记：自动恢复刚才那份。
     // 平时读到草稿不自动填，而是显示「恢复草稿」让用户自己选——公共电脑上可能是别人的草稿
     if (draft && params.get("resume") === "1") applyDraft(draft, true)
-    else setSavedDraft(draft)
+    else {
+      setSavedDraft(draft)
+      // 从首页场景 / 轻量咨询「已有明确项目」过来时带着 ?scene=，替用户选好「想处理哪类任务」。
+      // 只认选项列表里的字，别人拼的任意文字不会出现在表单里
+      const scene = params.get("scene")
+      if (kind === "demand" && scene && (CONSULT_SCENES as readonly string[]).includes(scene))
+        setValues((v) => ({ ...v, scene }))
+    }
 
     fetch("/api/me", { cache: "no-store" })
       .then((r) => r.json())
@@ -321,7 +328,7 @@ export function IntakeForm({
       <div className="intake-form">
         <div className="intake-receipt" role="status">
           <h2 ref={headingRef} tabIndex={-1} className="intake-step-title">
-            {kind === "demand" ? "需求已收到，等待平台跟进" : "服务资料已收到，等待平台审核"}
+            {kind === "demand" ? "需求已收到，等待团队跟进" : "服务资料已收到，等待团队审核"}
           </h2>
           <dl>
             <div>
@@ -334,11 +341,11 @@ export function IntakeForm({
             </div>
             <div>
               <dt>当前状态</dt>
-              <dd>{kind === "demand" ? "已接收，等待平台跟进" : "待审核"}</dd>
+              <dd>{kind === "demand" ? "已接收，等待团队跟进" : "待审核"}</dd>
             </div>
             {contactsOf(values).length > 0 && (
               <div>
-                <dt>平台会通过</dt>
+                <dt>团队会通过</dt>
                 <dd>{contactsOf(values).map((c) => c.type).join("、")}联系你</dd>
               </div>
             )}
@@ -351,8 +358,8 @@ export function IntakeForm({
           </dl>
           <p className="field-hint">
             {kind === "demand"
-              ? "平台会人工查看并联系你。AI 初评只是辅助判断，结果出来后可以在进度页查看；不代表报价或承诺。"
-              : "平台会核对作品和公开范围，有缺项时通过你留的联系方式沟通。审核通过不代表认证或订单承诺。"}
+              ? "团队会人工查看并联系你。AI 初评只是辅助判断，结果出来后可以在进度页查看；不代表报价或承诺。"
+              : "团队会核对作品和公开范围，有缺项时通过你留的联系方式沟通。审核通过不代表认证或订单承诺。"}
             本地草稿已删除。
           </p>
           <div className="intake-receipt-actions">
@@ -386,7 +393,7 @@ export function IntakeForm({
       {/* 需求页把这段说明放进了右侧「填写帮助」（app/(public)/requests/new/page.tsx），这里只给服务方页 */}
       {kind === "provider" && (
         <div className="intake-notice">
-          <b>提交后由平台后台接收，专人跟进</b>
+          <b>提交后由团队后台接收，专人跟进</b>
           <p>
             填写不需要登录；点「提交」时需要用手机号登录，方便你之后查看进度。微信和邮箱联系依然可用，不受影响。
           </p>
@@ -435,7 +442,7 @@ export function IntakeForm({
                 <label htmlFor="reference-project">
                   参考 Demo<small>（选填）</small>
                 </label>
-                <p className="field-hint">看到哪个作品和你的需求接近，可以选上，平台会参考它来理解你的需求。</p>
+                <p className="field-hint">看到哪个作品和你的需求接近，可以选上，团队会参考它来理解你的需求。</p>
                 <select id="reference-project" value={reference} onChange={(e) => setReference(e.target.value)}>
                   <option value="">暂不选择参考作品</option>
                   {projects.map((p) => (
@@ -444,7 +451,6 @@ export function IntakeForm({
                     </option>
                   ))}
                 </select>
-                {provider && <p className="field-hint">提供者：{provider.name} · 会一起提交给平台。</p>}
               </div>
             ) : null
           }
@@ -544,8 +550,8 @@ export function IntakeForm({
             <label className="intake-consent">
               <input type="checkbox" checked={analysisConsent} onChange={(e) => setAnalysisConsent(e.target.checked)} />
               <span>
-                <b>（选填）</b>同时请 AI 做一次需求初评（可行性、下一步、待确认问题），帮助平台更快跟进。只发送需求内容，
-                <b>不发送称呼、联系方式和公司名</b>；初评由平台承担费用，不扣你的额度，结果仅供参考。不勾选不影响提交和人工跟进。
+                <b>（选填）</b>同时请 AI 做一次需求初评（可行性、下一步、待确认问题），帮助团队更快跟进。只发送需求内容，
+                <b>不发送称呼、联系方式和公司名</b>；初评费用由我们承担，不扣你的额度，结果仅供参考。不勾选不影响提交和人工跟进。
               </span>
             </label>
           )}
@@ -553,8 +559,8 @@ export function IntakeForm({
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
             <span>
               {kind === "demand"
-                ? "我确认以上资料可用于平台沟通与对接；联系方式只用于平台联系我，不会公开。"
-                : "我确认以上资料可用于平台审核与对接；公开展示前平台会和我确认内容，联系方式不会公开。"}
+                ? "我确认以上资料可用于团队沟通与对接；联系方式只用于团队联系我，不会公开。"
+                : "我确认以上资料可用于团队审核与对接；公开展示前团队会和我确认内容，联系方式不会公开。"}
             </span>
           </label>
           {needLogin && (
@@ -562,7 +568,7 @@ export function IntakeForm({
               <p>
                 <b>提交前需要先用手机号登录。</b>
                 填写内容已保存在当前浏览器，登录后会自动回到这一步，重新勾选确认后再点「提交」即可。
-                登录手机号只用于查看进度，平台仍按你上面填的联系方式联系你。
+                登录手机号只用于查看进度，团队仍按你上面填的联系方式联系你。
               </p>
               <a className="btn-primary btn-md" href={loginHref}>
                 去登录 <ArrowRight size={16} />
@@ -624,217 +630,6 @@ export function IntakeForm({
       </p>
       <noscript>填写需要启用 JavaScript。也可以返回首页联系方式，直接通过微信沟通。</noscript>
     </form>
-  )
-}
-
-// 一组字段：普通字段直接排，带 extra 的收进一个折叠的「补充信息（选填）」
-function FieldList({
-  fields,
-  values,
-  errors,
-  onChange,
-  idPrefix = "",
-  optionsOverride = {},
-  after,
-  beforeExtra,
-}: {
-  fields: IntakeField[]
-  values: Values
-  errors: Record<string, string>
-  onChange: (key: string, v: string | string[]) => void
-  idPrefix?: string
-  optionsOverride?: Record<string, string[]>
-  after?: (key: string) => React.ReactNode
-  beforeExtra?: React.ReactNode
-}) {
-  const resolve = (f: IntakeField): IntakeField => (optionsOverride[f.key] ? { ...f, options: optionsOverride[f.key] } : f)
-  const render = (f: IntakeField) => (
-    <div key={f.key}>
-      <Field
-        field={resolve(f)}
-        idPrefix={idPrefix}
-        value={values[f.key]}
-        error={errors[idPrefix + f.key]}
-        onChange={(v) => onChange(f.key, v)}
-      />
-      {after?.(f.key)}
-    </div>
-  )
-  const main = fields.filter((f) => !f.extra)
-  const extra = fields.filter((f) => f.extra)
-  // 「至少填一项」的那组（联系方式）：在第一项的位置渲染整组 fieldset，组内其余项跳过
-  const oneOf = main.filter((f) => f.oneOf === CONTACT_GROUP)
-  const groupId = `intake-${idPrefix}${CONTACT_GROUP}`
-  const groupError = errors[idPrefix + CONTACT_GROUP]
-  const renderMain = (f: IntakeField) => {
-    if (f.oneOf !== CONTACT_GROUP) return render(f)
-    if (f !== oneOf[0]) return null
-    return (
-      <fieldset
-        key={CONTACT_GROUP}
-        id={groupId}
-        tabIndex={-1}
-        className="intake-field intake-contacts"
-        aria-invalid={!!groupError}
-        aria-describedby={[`${groupId}-hint`, groupError ? `${groupId}-error` : ""].filter(Boolean).join(" ")}
-      >
-        <legend>
-          {CONTACT_GROUP_TEXT.legend}
-          <span aria-label="必填"> *</span>
-        </legend>
-        <p id={`${groupId}-hint`} className="field-hint">
-          {CONTACT_GROUP_TEXT.hint}
-        </p>
-        {groupError && (
-          <p id={`${groupId}-error`} className="field-error">
-            {groupError}
-          </p>
-        )}
-        {oneOf.map(render)}
-      </fieldset>
-    )
-  }
-  // 折叠区里有内容或有错时默认展开，不然用户找不到自己填过的东西
-  const extraOpen = extra.some((f) => (Array.isArray(values[f.key]) ? values[f.key].length : values[f.key]) || errors[idPrefix + f.key])
-  return (
-    <>
-      {main.map(renderMain)}
-      {beforeExtra}
-      {extra.length > 0 && (
-        <details className="intake-extra" open={!!extraOpen}>
-          <summary>补充信息（选填，可以稍后沟通）</summary>
-          {extra.map(render)}
-        </details>
-      )}
-    </>
-  )
-}
-
-// 联系方式三个输入框标题前的小图标
-const icons: Record<string, React.ReactNode> = {
-  电话: <Phone size={15} aria-hidden />,
-  微信: <MessageCircle size={15} aria-hidden />,
-  邮箱: <Mail size={15} aria-hidden />,
-}
-
-// 单个字段。按 type 渲染成输入框 / 多行文本 / 下拉 / 一组复选框 / 单个勾选框，
-// 并把提示和错误用 aria-describedby 关联到输入框上，读屏软件聚焦时会一起读出来
-function Field({
-  field: f,
-  value,
-  onChange,
-  error,
-  idPrefix = "",
-}: {
-  field: IntakeField
-  value?: string | string[]
-  onChange: (v: string | string[]) => void
-  error?: string
-  idPrefix?: string
-}) {
-  const id = `intake-${idPrefix}${f.key}`
-  const hintId = `${id}-hint`,
-    errorId = `${id}-error`
-  const attributes = {
-    id,
-    "aria-invalid": !!error,
-    "aria-required": !!f.required,
-    "aria-describedby": [f.hint ? hintId : "", error ? errorId : ""].filter(Boolean).join(" ") || undefined,
-  }
-  // 「至少填一项」组里的字段单看都是选填，但标「选填」会让人以为整组都可以不填，所以不标
-  const title = (
-    <>
-      {f.oneOf && icons[f.label]}
-      {f.label}
-      {f.required ? <span aria-label="必填"> *</span> : f.oneOf ? null : <small>（选填）</small>}
-    </>
-  )
-  const errorNode = error && (
-    <p id={errorId} className="field-error">
-      {error}
-    </p>
-  )
-  if (f.type === "check") {
-    return (
-      <div className="intake-field">
-        <label className="intake-check" htmlFor={id}>
-          <input {...attributes} type="checkbox" checked={value === "是"} onChange={(e) => onChange(e.target.checked ? "是" : "")} />
-          <span>
-            {f.label}
-            {f.required && <span aria-label="必填"> *</span>}
-          </span>
-        </label>
-        {errorNode}
-      </div>
-    )
-  }
-  if (f.type === "multi") {
-    const selected = Array.isArray(value) ? value : []
-    return (
-      <fieldset className="intake-field" {...attributes} tabIndex={-1}>
-        <legend>{title}</legend>
-        {f.hint && (
-          <p id={hintId} className="field-hint">
-            {f.hint}
-          </p>
-        )}
-        <div className="intake-options">
-          {f.options?.map((option) => (
-            <label key={option}>
-              <input
-                type="checkbox"
-                checked={selected.includes(option)}
-                onChange={(e) => onChange(e.target.checked ? [...selected, option] : selected.filter((s) => s !== option))}
-              />
-              {option}
-            </label>
-          ))}
-        </div>
-        {errorNode}
-      </fieldset>
-    )
-  }
-  const text = typeof value === "string" ? value : ""
-  return (
-    <div className="intake-field">
-      <label htmlFor={id}>{title}</label>
-      {f.hint && (
-        <p className="field-hint" id={hintId}>
-          {f.hint}
-        </p>
-      )}
-      {f.type === "textarea" ? (
-        <textarea
-          {...attributes}
-          rows={4}
-          placeholder={f.placeholder}
-          maxLength={f.max ?? 2000}
-          required={f.required}
-          value={text}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      ) : f.type === "select" ? (
-        <select {...attributes} required={f.required} value={text} onChange={(e) => onChange(e.target.value)}>
-          <option value="">请选择</option>
-          {f.options?.map((o) => <option key={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input
-          {...attributes}
-          // 手机上 type=tel 弹拨号盘、type=email 弹带 @ 的键盘。表单是 noValidate，
-          // 浏览器不会拿自己的规则拦提交，真正的校验仍是 lib/intake-validation.ts
-          type={f.type === "url" ? "url" : f.inputMode === "tel" ? "tel" : f.inputMode === "email" ? "email" : "text"}
-          inputMode={f.type === "url" ? "url" : f.inputMode}
-          autoComplete={f.autoComplete}
-          placeholder={f.placeholder}
-          maxLength={f.max ?? 2000}
-          required={f.required}
-          value={text}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
-      {errorNode}
-    </div>
   )
 }
 

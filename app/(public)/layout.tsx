@@ -11,7 +11,7 @@ import { ConsultationProvider } from "@/components/consultation/consultation-pro
 // - jike-fresh.css：2026-10-15 的「清新浅色」皮肤，覆盖变量统一全组二级页面风格
 // - .jk-skin：把 shadcn 设计令牌覆盖成同套调色板，
 //   登录页/账号页的 Tailwind 类自动换肤，标记不用改
-// - ConsultationProvider 挂在这一层：导航、详情页的「咨询定制」共用同一个对话框。
+// - ConsultationProvider 挂在这一层：导航「聊聊我的场景」、首页场景、详情页的咨询按钮共用同一个对话框。
 //   它是客户端组件，但不读 cookies()/headers()，不影响页面的静态渲染
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (

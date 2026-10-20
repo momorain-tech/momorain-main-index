@@ -966,122 +966,17 @@
   .jk .request-help { position: static; margin-top: 0; }
 }
 
-/* ── 第四版首页（2026-10-19）：场景 → 成果 → 合作 → 团队 → 咨询 ────────────────
-   视觉方向（第四版建议 §8）：浅色正文 + 大幅真实成果 + 少量品牌色。
-   - 渐变只留在主按钮上；成果区用白色底板、细边框，不加厚重阴影
-   - 每个场景只有一个主要视觉（第一项真实成果）
-   - 限制说明紧挨着成果，正常字号，不缩成小字
-   - 所有 grid 单列都写 minmax(0, 1fr)（原因见 CLAUDE.md 导航栏窄屏一节） */
-.jk .home-section { padding: var(--jk-section-y) 0 0; }
-.jk .home-contact { padding-bottom: var(--jk-section-y); }
-.jk .home-head { margin-bottom: 24px; }
-.jk .home-head h2 { font-size: clamp(1.5rem, 3.2vw, 2.1rem); font-weight: 800; line-height: 1.3; margin-bottom: 8px; }
-.jk .home-head p { color: var(--jk-text-2); max-width: 700px; font-size: 15.5px; }
-
-/* 首屏：左四右六；手机上 用途 → 按钮 → 成果 */
-.jk .home-hero { padding: 56px 0 8px; }
-.jk .home-hero-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); gap: 40px; align-items: center; }
-.jk .home-hero h1 { font-size: clamp(30px, 3.8vw, 46px); line-height: 1.25; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 18px; }
-.jk .home-hero-desc { color: var(--jk-text-2); font-size: 17px; line-height: 1.8; }
-.jk .home-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-
-/* 成果底板（首屏右侧 + 每个场景的左侧） */
-.jk .hero-evidence, .jk .scene-evidence {
-  border: 1px solid var(--jk-card-border);
-  background: var(--jk-card);
-  border-radius: var(--jk-radius);
-  padding: var(--jk-pad-sm);
-  min-width: 0;
-}
-.jk .hero-evidence figcaption { margin-top: 12px; }
-.jk .hero-evidence-kicker { font-weight: 700; margin-bottom: 14px; }
-.jk .io-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: start; }
-.jk .io-grid-media { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
-.jk .io-col h3 { font-size: 13px; font-weight: 600; color: var(--jk-text-3); letter-spacing: 1px; margin-bottom: 8px; }
-.jk .io-col ul { padding-left: 1.2em; list-style: disc; color: var(--jk-text-2); font-size: 14.5px; }
-.jk .io-col p { color: var(--jk-text-2); font-size: 14.5px; }
-.jk .io-arrow { color: var(--jk-text-3); margin-top: 30px; }
-.jk .io-caption { margin-top: 8px; font-size: 13.5px; color: var(--jk-text-2); }
-.jk .io-caption .output-kind { margin-right: 6px; }
-.jk .evidence-note { margin-top: 12px; font-size: 13.5px; color: var(--jk-text-2); line-height: 1.7; }
-.jk .evidence-note b { color: var(--jk-text); font-weight: 600; }
-
-/* 媒体：图片默认只露出上半截（长教程缩成一整张看不清），点开看全图 */
-.jk .media-view { display: block; position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--jk-card-border); background: var(--jk-fill-2); }
-.jk .media-image img { display: block; width: 100%; height: auto; }
-.jk .media-crop img { aspect-ratio: 4 / 3; object-fit: cover; object-position: top; }
-.jk .media-enlarge { display: inline-block; font-size: 12.5px; color: var(--jk-accent-soft-text); padding: 6px 0; }
-.jk .media-image .media-enlarge { position: absolute; right: 8px; bottom: 8px; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); border: 1px solid var(--jk-card-border); }
-.jk .media-image:focus-visible { outline: 2px solid var(--jk-accent); outline-offset: 2px; }
-.jk .media-video { border: 0; background: none; }
-.jk .media-video video { display: block; width: 100%; border-radius: 10px; background: #000; }
-.jk .media-file { padding: 16px; color: var(--jk-accent-soft-text); }
+/* ── 第四版（2026-10-19）在浅色二级页面上用到的部分 ──────────────────────
+   首页本身是暗色霓虹（app/(home)/v4.module.css），这里只剩：
+   详情页「适用场景与边界」（SceneFacts）、成果类型标记、咨询弹窗里的轻量咨询表单、导航按钮窄屏文字 */
 .jk .output-kind.kind-input { background: var(--jk-fill-2); color: var(--jk-text-2); }
 .jk .output-kind.kind-revised { background: var(--jk-amber-bg); color: var(--jk-amber-text); }
-
-/* 场景导航：一排编号链接，不是卡片 */
-.jk .scene-nav { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 10px; }
-.jk .scene-nav a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--jk-border-2); background: var(--jk-card); font-size: 14.5px; transition: border-color 0.2s, color 0.2s; }
-.jk .scene-nav a:hover { border-color: var(--jk-hover-border); color: var(--jk-accent-soft-text); }
-.jk .scene-nav-index { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--jk-accent-soft-bg); color: var(--jk-accent-soft-text); font-size: 12px; font-weight: 700; }
-
-/* 重点演示：上下排列的大展示区 */
-.jk .scene-list { display: flex; flex-direction: column; gap: 28px; margin-top: 28px; }
-.jk .scene-block { border-top: 1px solid var(--jk-card-border); padding: 28px 0 0; scroll-margin-top: 80px; }
-.jk .scene-head { margin-bottom: 18px; }
-.jk .scene-index { font-size: 13px; color: var(--jk-text-3); font-weight: 600; }
-.jk .scene-head h3 { font-size: clamp(1.3rem, 2.6vw, 1.7rem); font-weight: 800; line-height: 1.35; margin: 4px 0 10px; }
-.jk .scene-badges { display: flex; flex-wrap: wrap; gap: 6px; }
-.jk .badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--jk-border-2); color: var(--jk-text-2); background: var(--jk-card); }
-.jk .badge-mode { border-color: transparent; background: var(--jk-green-bg); color: var(--jk-green-text); }
-.jk .badge-pending { border-color: var(--jk-amber-border); background: var(--jk-amber-bg); color: var(--jk-amber-text); }
-.jk .badge-origin { border-style: dashed; }
-.jk .scene-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 28px; align-items: start; }
-.jk .scene-evidence-empty { padding: 8px 4px; }
-.jk .scene-evidence-empty > p:nth-child(2) { font-size: 16px; color: var(--jk-text); margin: 6px 0 10px; line-height: 1.7; }
-.jk .scene-evidence-label { font-size: 13px; color: var(--jk-text-3); font-weight: 600; letter-spacing: 1px; }
 .jk .fact { margin-bottom: 14px; }
 .jk .fact h4 { font-size: 13px; color: var(--jk-text-3); font-weight: 600; letter-spacing: 1px; margin-bottom: 4px; }
 .jk .fact p, .jk .fact li { color: var(--jk-text-2); font-size: 14.5px; line-height: 1.75; }
 .jk .fact ul { padding-left: 1.2em; list-style: disc; }
-.jk .fact-more { border-top: 1px solid var(--jk-card-border); padding-top: 4px; margin-bottom: 8px; }
-.jk .fact-more > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-size: 14px; color: var(--jk-accent-soft-text); }
-.jk .fact-more[open] > summary { margin-bottom: 6px; }
-.jk .scene-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-.jk .scene-related { margin-top: 12px; font-size: 13.5px; color: var(--jk-text-2); }
-.jk .scene-related a { color: var(--jk-accent-soft-text); }
-/* 详情页里的同一份场景说明：四块并成两列 */
 .jk .scene-facts-detail .fact-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--jk-gap); }
 .jk .detail-subhead { font-size: 14px; color: var(--jk-text-3); font-weight: 600; margin: 14px 0 8px; }
-
-/* 合作方式：三行表格；手机上每行变成一张卡，列名写在内容前面 */
-.jk .coop-table { border: 1px solid var(--jk-card-border); border-radius: var(--jk-radius); background: var(--jk-card); overflow: hidden; }
-.jk .coop-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 4fr); gap: 16px; padding: 16px var(--jk-pad-sm); border-top: 1px solid var(--jk-card-border); font-size: 14.5px; color: var(--jk-text-2); }
-.jk .coop-row b { color: var(--jk-text); }
-.jk .coop-row-head { border-top: 0; font-size: 13px; color: var(--jk-text-3); font-weight: 600; background: var(--jk-fill-2); }
-.jk .coop-label { display: none; font-style: normal; color: var(--jk-text-3); }
-.jk .coop-bottom { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--jk-gap); margin-top: var(--jk-gap); }
-.jk .coop-fee, .jk .coop-steps { border: 1px solid var(--jk-card-border); border-radius: var(--jk-radius); background: var(--jk-card); padding: var(--jk-pad-sm); }
-.jk .coop-bottom h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-.jk .coop-fee p { color: var(--jk-text-2); font-size: 14.5px; line-height: 1.8; }
-.jk .coop-steps ol { list-style: none; padding: 0; margin: 0; counter-reset: step; display: flex; flex-direction: column; gap: 8px; }
-.jk .coop-steps li { counter-increment: step; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; color: var(--jk-text-2); font-size: 14.5px; }
-.jk .coop-steps li::before { content: counter(step); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--jk-accent-soft-bg); color: var(--jk-accent-soft-text); font-size: 12px; font-weight: 700; }
-
-/* 核心团队 */
-.jk .team-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--jk-gap); }
-.jk .team-card { border: 1px solid var(--jk-card-border); border-radius: var(--jk-radius); background: var(--jk-card); padding: var(--jk-pad-sm); }
-.jk .team-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-.jk .team-card p, .jk .team-card li { color: var(--jk-text-2); font-size: 14.5px; line-height: 1.75; }
-.jk .team-card ul { display: flex; flex-direction: column; gap: 6px; }
-.jk .team-card li b { color: var(--jk-text); font-weight: 600; }
-.jk .team-card-wide { grid-column: 1 / -1; }
-
-/* 页尾咨询：两个起点 + 微信卡 */
-.jk .contact-starts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--jk-gap); margin-bottom: var(--jk-gap); }
-.jk .contact-start { border: 1px solid var(--jk-card-border); border-radius: var(--jk-radius); background: var(--jk-card); padding: var(--jk-pad); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-.jk .contact-start h3 { font-size: 17px; font-weight: 700; }
-.jk .contact-start p { color: var(--jk-text-2); font-size: 14.5px; flex: 1; }
 
 /* 导航主按钮：窄屏只剩「聊聊场景」4 个字（360px 的导航栏没有余量，见 nav.tsx） */
 @media (max-width: 400px) {
@@ -1110,18 +1005,7 @@
 .jk .consult-wechat-alt { margin-top: 16px; border-top: 1px solid var(--jk-card-border); padding-top: 4px; }
 .jk .consult-wechat-alt > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-size: 14px; color: var(--jk-accent-soft-text); }
 
-@media (max-width: 900px) {
-  .jk .home-hero { padding-top: 36px; }
-  .jk .home-hero-grid, .jk .scene-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-}
 @media (max-width: 640px) {
-  .jk .coop-row-head { display: none; }
-  .jk .coop-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .jk .coop-label { display: inline; }
-  .jk .coop-bottom, .jk .team-grid, .jk .contact-starts, .jk .scene-facts-detail .fact-pair { grid-template-columns: minmax(0, 1fr); }
-  .jk .io-grid { grid-template-columns: minmax(0, 1fr); }
-  .jk .io-grid-media { grid-template-columns: minmax(0, 1fr); }
-  .jk .io-arrow { transform: rotate(90deg); margin: 0 auto; }
-  .jk .home-hero-desc { font-size: 16px; }
+  .jk .scene-facts-detail .fact-pair { grid-template-columns: minmax(0, 1fr); }
 }
 .jk .consult-form .consult-source { margin: 0 0 14px; font-size: 14px; }
